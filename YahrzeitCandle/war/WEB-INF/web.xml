@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee 
+              http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+         version="2.5"
+         xmlns="http://java.sun.com/xml/ns/javaee">
+
+  <!-- Servlets -->
+  <servlet>
+    <servlet-name>FastCGI</servlet-name>
+    <servlet-class>org.jfastcgi.servlet.FastCGIServlet</servlet-class>
+    <init-param>
+        <param-name>server-address</param-name>
+        <param-value>localhost:9001</param-value>
+    </init-param>
+</servlet>
+<servlet-mapping>
+    <servlet-name>FastCGI</servlet-name>
+    <url-pattern>*.php</url-pattern>
+</servlet-mapping>
+  
+  <!-- Default page to serve -->
+  <welcome-file-list>
+    <welcome-file>index.php</welcome-file>
+  </welcome-file-list>
+
+</web-app>
