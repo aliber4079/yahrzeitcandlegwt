@@ -1,0 +1,7 @@
+Here's how it works: Enter the Yahrzeits you want to remember, and 
+this application will send an email reminder, as well as optionally 
+posting a note in your Facebook feed, at the time the Yahrzeit occurs.
+<p>
+Thanks to <a href="http://www.hebcal.com" target="_blank" >hebcal.com</a> for the hebcal 
+and hebcalJ calculation engines.
+<p>
