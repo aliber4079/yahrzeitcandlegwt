@@ -24,42 +24,34 @@ $arr=json_decode($rawData);
 
 $jshelper = $facebook->getJavaScriptHelper();
 $t=$me=null;
-if (isset($_SESSION['fbtoken'])){
-	$facebook->setDefaultAccessToken($_SESSION['fbtoken']);
-}else if (isset($arr->{'access_token'}) && ($arr->{'access_token'}!==null)){
-	$facebook->setDefaultAccessToken($arr->{'access_token'});
-	error_log("set access token from payload: " . $arr->{'access_token'});
-} else {//no token in php session cookie yet, try to get from fb cookie
-	try{
-		$accessToken=$jshelper->getAccessToken();
-		$facebook->setDefaultAccessToken($accessToken);
-		$_SESSION['fbtoken']=$accessToken;
-		session_commit();
+try{
+	if (isset($_SESSION['fbtoken'])){
+			$facebook->setDefaultAccessToken($_SESSION['fbtoken']);
+		} else if (isset($arr->{'access_token'}) && ($arr->{'access_token'}!==null)){
+			$facebook->setDefaultAccessToken($arr->{'access_token'});
+			error_log("set access token from payload: " . $arr->{'access_token'});
+		} else {//no token in php session cookie yet, try to get from fb cookie
+			$accessToken=$jshelper->getAccessToken();
+			$facebook->setDefaultAccessToken($accessToken);
+			$_SESSION['fbtoken']=$accessToken;
+			session_commit();
+		}
+		$me=$facebook->get('/me/');
+		$user_id=$me->getGraphUser()->getField('id');
+		
 	} catch(Facebook\Exceptions\FacebookResponseException $e){
 		//need to re-authenticate
-		exit(json_encode(array("method"=>"need_auth","status"=>"error")));
-		//"method"=>"add","response"=>"OK",
-		exitException($e);
+		reauth($e);
+	} catch (Facebook\Exceptions\FacebookAuthorizationException $e){
+		reauth($e);
+	} catch(Facebook\Exceptions\FacebookSDKException $e){
+		reauth($e);
 	} catch(Exception $e){
 		exitException($e);
 	}
-}
 
 
-try {
-	$me=$facebook->get('/me/');
 
-} catch (Facebook\Exceptions\FacebookAuthorizationException $e){
-	unset($_SESSION['fbtoken']);
-	exit(json_encode(array(array("method"=>"need_auth","response"=>"error"))));
-	exitException($e);
-} catch(Facebook\Exceptions\FacebookSDKException $e){
-	unset($_SESSION['fbtoken']);
-	exit(json_encode(array(array("method"=>"need_auth","response"=>"error"))));
-	exitException($e);
-}
-
-$user_id=$me->getGraphUser()->getField('id');
 
 
 error_log(print_r($me,1));
@@ -129,7 +121,7 @@ error_log("arr: ".print_r($arr,1));
 error_log("setting userid to $user_id");
 if (!$user_id || $user_id==0) {
  error_log("oops, bailing");
- exit(json_encode(array(array("response"=>"error"))));
+ exit(json_encode(array("status"=>"error")));
 }
 error_log("userid: $user_id");
 if ($arr->{'method'}=="ping") {
@@ -143,7 +135,7 @@ if ($arr->{'method'}=="add") {
 $results[]=	add_yahrzeit($user_id,$yahrzeit);
 error_log("add result: ".print_r($results,1));
       if (sizeof($results)==0) {
-        $j= "[{\"response\":\"failed\"}]";
+        $j= "[{\"status\":\"error\"}]";
 	error_log("response failed: $j");
 	
     }
@@ -151,7 +143,7 @@ error_log("add result: ".print_r($results,1));
 
 $cnt=get_yahrzeit_count( $user_id);
   error_log("get yahrzeitcount for $user_id");
-  $j=json_encode(Array(Array("method"=>"add","response"=>"OK",
+  $j=json_encode(Array(Array("method"=>"add","status"=>"OK",
 "count"=>intval($cnt), "yahrzeitlist"=>$results)));
   print $j;
 
@@ -181,7 +173,7 @@ exit(json_encode(array($json_array)));
      $res=delete_yahrzeit($user_id,$yahrzeit->{"id"});
 	$cnt=get_yahrzeit_count( $user_id);
     if ($res!=null) {
-         $j=json_encode(Array(Array("response"=>"OK","method"=>"delete",
+         $j=json_encode(Array(Array("status"=>"OK","method"=>"delete",
 			"count"=>intval($cnt),"yahrzeitlist"=>array($yahrzeit))));
         print ($j);
         error_log("delete json: $j");
@@ -193,7 +185,7 @@ exit(json_encode(array($json_array)));
     //error_log("modify item: ".$yahrzeit->{'id'});
      $res=modify_yahrzeit($user_id,$yahrzeit);
    if ($res!=null) {
-         $j=json_encode(Array(Array("response"=>"OK","method"=>"modify",
+         $j=json_encode(Array(Array("status"=>"OK","method"=>"modify",
 "yahrzeitlist"=>array($yahrzeit))));
         print ($j);
         //error_log("returning ".$j);
@@ -202,7 +194,7 @@ exit(json_encode(array($json_array)));
 } else if($arr->{'method'}=="allow_email") {
 if (!isset($arr->{'authResponse'})) {
 error_log("in allow_email: no authResponse");
-$j=json_encode(Array(Array("response"=>"OK",'method'=>"allow_email", "allow_email"=>FALSE)));
+$j=json_encode(Array(Array("status"=>"OK",'method'=>"allow_email", "allow_email"=>FALSE)));
 print ($j);
 return null;
 }
@@ -212,8 +204,8 @@ $allow_publish=$oldperms['allow_publish'] && TRUE;
 $perms=array("allow_email"=>$allow_email && TRUE);
 $perms['allow_publish']=$allow_publish && TRUE;
    set_perms($perms,$user_id);
-   $j=json_encode(Array(Array("response"=>"OK",'method'=>"allow_email", "allow_email"=>$allow_email)));
-print ($j);
+   $j=json_encode(array("status"=>"OK",'method'=>"allow_email", "allow_email"=>$allow_email));
+	print ($j);
 
 }
 
@@ -221,7 +213,7 @@ print ($j);
 error_log(print_r($arr,1));
 if (!isset ($arr->{'authResponse'})) {
 error_log("in allow_publish: no authResponse");
-   $j=json_encode(Array(Array("response"=>"OK",'method'=>"allow_publish", "allow_publish"=>FALSE)));
+   $j=json_encode(Array(Array("status"=>"OK",'method'=>"allow_publish", "allow_publish"=>FALSE)));
 print ($j);
 //error_log(print_r($j,1));
 return null;
@@ -233,12 +225,16 @@ $oldperms=get_perms($user_id);
 $allow_email=$oldperms['allow_email'] && TRUE;
 $perms['allow_email']=$allow_email;
 
-
-   set_perms($perms,$user_id);
-   $j=json_encode(Array(Array("response"=>"OK",'method'=>"allow_publish", "allow_publish"=>$allow_publish)));
+set_perms($perms,$user_id);
+$j=json_encode(Array(Array("status"=>"OK",'method'=>"allow_publish", "allow_publish"=>$allow_publish)));
 print ($j);
 error_log(print_r($j,1));
 
 }
 
+function reauth($e){
+	error_log($e->getTraceAsString());
+	unset ($_SESSION["fbtoken"]);
+	exit(json_encode(array("method"=>"need_auth","status"=>"error")));	
+}
 ?>
