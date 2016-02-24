@@ -1,6 +1,7 @@
 package com.topweb.yahrzeitcandle.client;
 
 
+
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -10,7 +11,7 @@ import net.sf.hebcal.HebrewDate;
 import net.sf.hebcal.HebrewDateException;
 
 
-
+import com.google.gwt.user.client.Window;
 import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
@@ -84,25 +85,31 @@ public class YahrzeitCandle implements EntryPoint {
 		"August","September","October",
 		"November","December"};
 	
-	private VerticalPanel mainPanel = new VerticalPanel();
+	private static VerticalPanel mainPanel = new VerticalPanel();
 	public static YahrzeitCandle sw_singleton=null;
 	 
 	  
 	  static HorizontalPanel addPanel = new HorizontalPanel();
 	  static HorizontalPanel addPanel1 = new HorizontalPanel();
-	  TextBox newHonoree = new TextBox();
-		public static HebrewDate m_hebDate=new HebrewDate();
-	  private HebrewDateMonthInput newHebrewDate_mon=new HebrewDateMonthInput();
-	  private HebrewDateDayInput newHebrewDate_day=new HebrewDateDayInput();
-	  private TextBox newHebrewYear = new TextBox(); 
+	  static TextBox newHonoree = new TextBox();
+	public static HebrewDate m_hebDate=new HebrewDate();
+	public static ChangeHandler m_changedate = new ChangeHandler(){
+			public void onChange(ChangeEvent e){
+				//sw_singleton.displayError("onchange from " + ((Widget)e.getSource()).getTitle());
+				validateDates(((Widget)e.getSource()).getTitle());
+				
+				}};
+	  private static HebrewDateMonthInput newHebrewDate_mon=new HebrewDateMonthInput();
+	  private static HebrewDateDayInput newHebrewDate_day=new HebrewDateDayInput();
+	  private static TextBox newHebrewYear = new TextBox(); 
 	  //private 
-	  private Button addYtoListButton = new Button("Add");
-	  private Button testAjaxButton = new Button("testAjax");
-	  private Label lastUpdatedLabel = new Label();
+	  private static Button addYtoListButton = new Button("Add");
+	  private static Button testAjaxButton = new Button("testAjax");
+	  private static Label lastUpdatedLabel = new Label();
 	  private static Label errDisplay = new Label("");
-	private TextBox newGregDate_day=new TextBox();
-	private TextBox newGregDate_year=new TextBox();
-	private GregDateMonthInput newGregDate_mon= new GregDateMonthInput();
+	private static TextBox newGregDate_day=new TextBox();
+	private static TextBox newGregDate_year=new TextBox();
+	private static GregDateMonthInput newGregDate_mon= new GregDateMonthInput();
 	static final String JSON_URL = /*GWT.getModuleBaseURL()+*/  "gwt.php";
 	static final String photoUploaderURL = GWT.getModuleBaseURL()  + "gwt/photouploader.php";
 	private static Timer displayTimer=null;
@@ -115,7 +122,8 @@ public class YahrzeitCandle implements EntryPoint {
 		  public static MyFlexTable yahrFlexTable = new MyFlexTable();
 public static int userId=0;
 public static FBAuthResponse fbAuthResponse=null;
-public static CheckBox emailNotif=null ; 
+public static CheckBox emailNotif= new CheckBox();
+
 public static boolean fqlAllowPhotos=false,fqlAllowWall=false, fqlAllowEmail=false;
 
 public static Label ycstats=new Label("Your Yahrzeit list");
@@ -130,8 +138,8 @@ public static String willEmail="Yahrzeit Candle will send a reminder email a day
 public static String wontEmail="Check box to allow Yahrzeit Candle to send reminder emails";
 public static String permsRequested=null;
 public static String emailPerms="email";
-public String intro_msg=null;
-private HTML introLabel = new HTML();
+public static String intro_msg=null;
+private static HTML introLabel = new HTML();
 public static String access_token=null;
 
 	/**
@@ -140,6 +148,8 @@ public static String access_token=null;
 	public void onModuleLoad() {
 		
 		sw_singleton=this;
+		
+
 		installResumeHandler();
 		ScriptElement e = Document.get().createScriptElement();
 		e.setAttribute("src", "//connect.facebook.net/en_US/sdk.js");
@@ -149,19 +159,52 @@ public static String access_token=null;
 	}
 	
 	public static native void installResumeHandler()/*-{
-		$wnd.resumehandler=
-			$entry(@com.topweb.yahrzeitcandle.client.YahrzeitCandle::resumeHandler());
-	}-*/;
-	
-	public static native void resumeHandler() /*-{
-	 @com.topweb.yahrzeitcandle.client.YahrzeitCandle::resumeLoadStatic()();
+		$wnd.resumehandler=function(){
+			$wnd.FB.getLoginStatus(function(response) {
+     			$wnd.console && $wnd.console.log(response);
+				if (response.status!="connected"){
+					$wnd.console && $wnd.console.log("not logged in");
+					//top.Location="";
+					return;
+				}
+				$wnd.console && $wnd.console.log("storing auth response");
+				$wnd.console && $wnd.console.log(response.authResponse);
+				@com.topweb.yahrzeitcandle.client.YahrzeitCandle::fbAuthResponse=response.authResponse;
+				$wnd.FB.api("/me/permissions",function (response) {
+     				if (response && !response.error) {
+       					// handle the result
+				       $wnd.console && $wnd.console.log("got perms");
+				       $wnd.console && $wnd.console.log(response);
+				       @com.topweb.yahrzeitcandle.client.YahrzeitCandle::processPermsResponse(Lcom/google/gwt/core/client/JsArray;)(response);
+     				}
+   				});
+			});
+		}
 	}-*/;
 
-	public static void resumeLoadStatic() {
-		sw_singleton.resumeLoad();
-	}
-
-	public  void resumeLoad() {
+	public static void processPermsResponse(JsArray<PermsResponse>  perms) {
+		Console.log("process perms response");
+		Console.logAsObject(perms);
+		for (int i=0;i<perms.length();i++){
+			PermsResponse p = perms.get(i);
+			if (p.getPermission()=="email" && p.getStatus()=="granted"){
+				fqlAllowEmail=true;
+			}
+			if (p.getPermission()=="user_photos" && p.getStatus()=="granted"){
+				fqlAllowPhotos=true;
+			}
+		}
+		if (fqlAllowEmail) {
+			emailNotif.setText(willEmail);
+			emailNotif.setValue(true);
+		}
+		else {
+			emailNotif.setText(wontEmail);
+			emailNotif.setValue(false);
+		}
+		newHonoree.setReadOnly(false);
+		emailNotif.setVisible(true);
+		
 		intro_msg=MyTextResources.INSTANCE.getIntroMsg().getText();
 		introLabel.setHTML(intro_msg);
 		newHonoree.setValue("John Doe");
@@ -206,8 +249,6 @@ public static String access_token=null;
 	    
 	    );
 	    addPanel1.add(addCancelButton);
-	    emailNotif = new CheckBox();
-	    emailNotif.setVisible(false);
 	    
 	    
 	    emailNotif.addValueChangeHandler(new ValueChangeHandler<Boolean>() {
@@ -298,102 +339,49 @@ public static String access_token=null;
 
 			@Override
 			public void onClick(ClickEvent event) {
-				// TODO Auto-generated method stub
+				// 
 				// Send request to server and catch any errors.
 			    errDisplay.setText(null);
 				SvrReq svr = (SvrReq)JavaScriptObject.createObject();
 				svr.setMethod("ping");
-				svr.setFbAuthResponse(YahrzeitCandle.fbAuthResponse.getResponse());
+				svr.setFbAuthResponse(YahrzeitCandle.fbAuthResponse);
 				 
 				yahrFlexTable.submitData(svr);
 				
 			}
 		});
 	    
-	    mainPanel.add(testAjaxButton);
+	    //mainPanel.add(testAjaxButton);
 
 	      addPanel.addStyleName("addPanel");
 	      addPanel1.addStyleName("addPanel");
 	       
 
-	      fbGetLoginstatus();
+			yahrFlexTable.resync();
 	      
 	      
-	      MyFlexTable.resizeFbIframe();
 	    	
 		  }
 
-	public static native void fbGetLoginstatus() /*-{
-    $wnd.FB.getLoginStatus(function(response) {
-     $wnd.console && $wnd.console.log(response);
-	  response.authResponse && @com.topweb.yahrzeitcandle.client.YahrzeitCandle::fbGetLoginStatusCallback(Lcom/topweb/yahrzeitcandle/client/FBAuthResponse;)(response);
-	 });
-	}-*/;	
-
-	public static void fbGetLoginStatusCallback(FBAuthResponse s){ //callback after loginstatus is retrieved
-		Console.log("in fbGetLoginStatusCallback");
-		Console.log(s.getStatus());
-		fbAuthResponse=s;			
-		sw_singleton.newHonoree.setReadOnly(false);
-		emailNotif.setVisible(true);
-		access_token=s.getAccessToken();
-		Console.log("leaving setAuthResponse");
-		queryPerms();
-	}
 	
-	private static native void queryPerms() /*-{
-	 $wnd.FB.api("/me/permissions",function (response) {
-      if (response && !response.error) {
-        // handle the result
-        $wnd.console && $wnd.console.log("got perms");
-        $wnd.console && $wnd.console.log(response);
-        @com.topweb.yahrzeitcandle.client.YahrzeitCandle::processPermsResponse(Lcom/google/gwt/core/client/JsArray;)(response.data);
-      }
-    });
-	}-*/;
 
-	//called by queryPerms callback
-	public static void processPermsResponse(JsArray<PermsResponse>  perms) {
-		Console.log("process perms response");
-		Console.logAsObject(perms);
-		for (int i=0;i<perms.length();i++){
-			PermsResponse p = perms.get(i);
-			if (p.getPermission()=="email" && p.getStatus()=="granted"){
-				fqlAllowEmail=true;
-			}
-			if (p.getPermission()=="user_photos" && p.getStatus()=="granted"){
-				fqlAllowPhotos=true;
-			}
-		}
-		if (fqlAllowEmail) {
-			emailNotif.setText(willEmail);
-			emailNotif.setValue(true);
-		}
-		else {
-			emailNotif.setText(wontEmail);
-			emailNotif.setValue(false);
-		}
-		yahrFlexTable.resync();
-	
-	}
 
 	public static native void fblogin(String theperms) /*-{
 		$wnd.console && $wnd.console.log("in fblogin function");
 		$wnd.FB.login( function(response) {
 			$wnd.console && $wnd.console.log("response: ");
 			$wnd.console && $wnd.console.log(response);
-		  @com.topweb.yahrzeitcandle.client.YahrzeitCandle::fbloginCallback(Ljava/lang/String;Z)(theperms,response.authResponse!=null);
-			}, {scope: theperms});
+		  @com.topweb.yahrzeitcandle.client.YahrzeitCandle::fbloginCallback(Lcom/topweb/yahrzeitcandle/client/FBAuthResponse;)(response);
+			}, {scope: theperms, return_scopes:true});
 	  
 	}-*/;
 
 	
-	public static void fbloginCallback(String theperms,boolean granted){
-		Console.log("the perms: " + theperms + " granted: " + granted);
-		if (false || theperms.contains("publish_stream"))
-			fqlAllowWall=true;
-		
-		if (theperms.contains("email")) {
+	public static void fbloginCallback(FBAuthResponse response){
+		 
+		Console.log("response: " );
+		Console.logAsObject(response);
+		/*if (theperms.contains("email")) {
 			fqlAllowEmail=true;
 		}
 		if (fqlAllowEmail){ 
@@ -406,7 +394,7 @@ public static String access_token=null;
 		}
 
 	
-		if (theperms.contains("user_photos") && granted) {
+		if (theperms.contains("user_photos")) {
 			fqlAllowPhotos=true;
 			Console.log("user photos set to" + fqlAllowPhotos);
 			PhotoBrowser.showUploader();
@@ -420,25 +408,14 @@ public static String access_token=null;
 				emailNotif.setText(wontEmail);
 				emailNotif.setValue(false);
 			}
-		}
+		}*/
 		permsRequested="";
 	}
-	
-	
-
-	
 	 
-	
-	
-	
-	
-	
 
 
 	protected static void displayError(String string) {
-		// TODO Auto-generated method stub
-
-
+		
 		displayq.add(string);
 		if (displayTimer!=null){
 			return;
@@ -466,8 +443,8 @@ public static String access_token=null;
 	}
 
 	
-	protected void addHonoree() {
-		// TODO Auto-generated method stub
+	protected static void addHonoree() {
+		
 		final String Yahrzeit = newHonoree.getText().trim();
 	    newHonoree.setFocus(true);
 
@@ -532,7 +509,7 @@ static HebrewDate calc_greg_date_todisplay(int y_hmon, int y_hebday) {
     try {
 		gregEquiv.setHebrewDate(y_hmon,y_hebday,hebyear1);
 	} catch (HebrewDateException e) {
-		// TODO Auto-generated catch block
+		
 		e.printStackTrace();
 	}
 //System.out.println("gregequiv is " + gregEquiv.formatGregorianDate_English());
@@ -549,7 +526,7 @@ static HebrewDate calc_greg_date_todisplay(int y_hmon, int y_hebday) {
 
 
 private void resetAddFields() {
-	// TODO Auto-generated method stub
+	
     newHonoree.setValue("");
     m_hebDate=new HebrewDate();
     newHebrewDate_mon.setMonth(m_hebDate.getHebrewMonth());
@@ -573,7 +550,7 @@ private void resetAddFields() {
 
 
 public  void freeAddFields() {
-	// TODO Auto-generated method stub
+	
     newHonoree.setEnabled(true);
     newHebrewDate_mon.setEnabled(true);
     newHebrewDate_day.setEnabled(true);
@@ -588,12 +565,6 @@ public  void freeAddFields() {
 	 
 
 
-public static ChangeHandler m_changedate = new ChangeHandler(){
-		public void onChange(ChangeEvent e){
-			//sw_singleton.displayError("onchange from " + ((Widget)e.getSource()).getTitle());
-			sw_singleton.validateDates(((Widget)e.getSource()).getTitle());
-			
-			}};
 
 public static native void reloadAppUrl() /*-{
 	top.location="http://apps.facebook.com/" + @com.topweb.yahrzeitcandle.client.YahrzeitCandle::AppName + "/";
@@ -610,7 +581,7 @@ public static native void loginToFB() /*-{
 	}-*/;
 			
 			
-	public void validateDates(String src){
+	public static void validateDates(String src){
 		boolean isvalid=false;
 		int hebday,hebyear,gregday,gregyear;
 		hebday = hebyear= gregday= gregyear=0;
@@ -658,7 +629,7 @@ public static native void loginToFB() /*-{
 				newGregDate_year.setValue(""+m_hebDate.getGregorianYear());
 				return;
 			} catch (HebrewDateException e) {
-				// TODO Auto-generated catch block
+				
 				e.printStackTrace();
 			}
 			
@@ -707,7 +678,7 @@ public static native void loginToFB() /*-{
 				newHebrewDate_day.setDay(m_hebDate.getHebrewDate());
 				newHebrewYear.setValue(""+m_hebDate.getHebrewYear());
 			} catch (HebrewDateException e) {
-				// TODO Auto-generated catch block
+				
 				e.printStackTrace();
 			}
 		}

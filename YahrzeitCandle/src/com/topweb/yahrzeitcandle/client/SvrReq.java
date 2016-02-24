@@ -8,7 +8,7 @@ public class SvrReq extends JavaScriptObject {
 	public native final void setUid(int uid) /*-{
 		this.uid=uid;
 	}-*/;
-	public native final void setFbAuthResponse(JavaScriptObject authResponse) /*-{
+	public native final void setFbAuthResponse(FBAuthResponse authResponse) /*-{
 		this.authResponse=authResponse;
 	}-*/;
 	public native final void setMethod(String method) 

@@ -324,7 +324,7 @@ int mdb=master.getYahrzeit().getDbId();
 
 			SvrReq svr=(SvrReq)JavaScriptObject.createObject();
 	        svr.setMethod("delete");
-			svr.setFbAuthResponse(YahrzeitCandle.fbAuthResponse);
+			//svr.setFbAuthResponse(YahrzeitCandle.fbAuthResponse);
 	        Yahrzeit h[] = {getYahrzeitContainerFromDbId(dbid).getYahrzeit()};
 	        svr.setYahrzeits(JsArrayUtils.readOnlyJsArray(h));
 	        submitData(svr);
@@ -360,10 +360,11 @@ int mdb=master.getYahrzeit().getDbId();
 		}
 	  void submitData(SvrReq req) {
 		  try {
+			  Console.logAsObject(req);
 		  RequestBuilder builder = new RequestBuilder(RequestBuilder.POST, YahrzeitCandle.JSON_URL);
 		  builder.setHeader("Content-Type", "application/json");
 		  builder.setHeader("Accept", "application/json");
-		   
+		  req.setFbAuthResponse(YahrzeitCandle.fbAuthResponse);
 		    Request request = builder.sendRequest(JsonUtils.stringify(req), 
 		    	new RequestCallback() {
 		    	  public void onError(Request request, Throwable exception) {
@@ -388,8 +389,35 @@ int mdb=master.getYahrzeit().getDbId();
 						JsArray<Yahrzeit> yahrzeitlist=req.getYahrzeitList();
 						if (yahrzeitlist==null || yahrzeitlist.length()==0) {
 							setStatCount(0);
+							resizeFbIframe();
 						} else {
 							addRowsConfirmed(yahrzeitlist);
+						}
+					}else if (req.getMethod().equalsIgnoreCase("add")){
+						YahrzeitCandle.sw_singleton.freeAddFields();
+					    YahrzeitCandle.addPanel.setVisible(false);
+					    YahrzeitCandle.addPanel1.setVisible(false);
+					    YahrzeitCandle.addYahrButton.setEnabled(true);
+					    JsArray<Yahrzeit> yahrzeitlist=req.getYahrzeitList();
+					   	if (yahrzeitlist.length()!=m_YahrzeitContainerList.size()+1) {
+							resync();
+							return;
+						}
+						else{
+							System.out.println("add: no resync needed");
+							addRowsConfirmed(yahrzeitlist);
+						}
+				} else if (req.getMethod().equalsIgnoreCase("delete")){
+						//System.out.println("delete callback reached");
+						JsArray<Yahrzeit> yahrzeitlist=req.getYahrzeitList();
+						
+						if (yahrzeitlist.length()!=m_YahrzeitContainerList.size()-1) {
+							resync();
+						} else {
+							System.out.println ("delete: no resync needed");
+
+						    	//System.out.println("delete id " + h.getDbId());
+						    	deleteRowsConfirmed(yahrzeitlist);
 						}
 					}
 				} //status OK
@@ -677,7 +705,6 @@ private void editRow(int dbid) {
 	public void addRowRequest(Yahrzeit h1) {
 		SvrReq svr=(SvrReq)JavaScriptObject.createObject();
 		svr.setMethod("add");
-		svr.setFbAuthResponse(YahrzeitCandle.fbAuthResponse);
 
 		 Yahrzeit h[] = {h1};
 	        svr.setYahrzeits(JsArrayUtils.readOnlyJsArray(h));
@@ -687,7 +714,7 @@ private void editRow(int dbid) {
 	public void modifyRowRequest(Yahrzeit h1){
 		SvrReq svr=(SvrReq)JavaScriptObject.createObject();
 		svr.setMethod("modify");
-		svr.setFbAuthResponse(YahrzeitCandle.fbAuthResponse);
+		//svr.setFbAuthResponse(YahrzeitCandle.fbAuthResponse);
 
 		 Yahrzeit h[] = {h1};
 	        svr.setYahrzeits(JsArrayUtils.readOnlyJsArray(h));
@@ -697,7 +724,7 @@ private void editRow(int dbid) {
 	public   void resync() {
 		SvrReq svr = (SvrReq)JavaScriptObject.createObject();
 		svr.setMethod("resync");
-		svr.setFbAuthResponse(YahrzeitCandle.fbAuthResponse.getResponse());
+		
 		 submitData(svr);
 	}
 	
@@ -745,7 +772,7 @@ deleteDialog.setText("delete selected yahrzeit?");
 		if (h1==null) return;
 		SvrReq svr=(SvrReq)JavaScriptObject.createObject();
 		svr.setMethod("add_photo");
-		svr.setFbAuthResponse(YahrzeitCandle.fbAuthResponse);
+		//svr.setFbAuthResponse(YahrzeitCandle.fbAuthResponse);
 		svr.setPhoto(String.valueOf(fbPhoto.getId()));
 		 
 		 Yahrzeit h[] = {h1};
@@ -757,7 +784,7 @@ deleteDialog.setText("delete selected yahrzeit?");
 	public static void clearPhotoRequest(YahrzeitImage fbPhoto) {
 		SvrReq svr=(SvrReq)JavaScriptObject.createObject();
 		svr.setMethod("clear_photo");
-		svr.setFbAuthResponse(YahrzeitCandle.fbAuthResponse);
+		//svr.setFbAuthResponse(YahrzeitCandle.fbAuthResponse);
 		svr.setPhoto(String.valueOf(fbPhoto.getYahrzeit().getDbId()));
 		 
 		YahrzeitCandle.yahrFlexTable.submitData(svr);	
