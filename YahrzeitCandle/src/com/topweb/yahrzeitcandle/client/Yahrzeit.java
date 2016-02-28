@@ -50,8 +50,8 @@ public final class Yahrzeit extends JavaScriptObject { //implements Comparable<H
 		public final native String getSrcSmall() /*-{return this.src_small;}-*/;
 		public final native String getSrcBig() /*-{return this.src_big;}-*/;
 
-
-		  
-		  
+		public final native void setPhoto(String photo) /*-{
+			this.photo=photo;
+		}-*/;
 		  
 }

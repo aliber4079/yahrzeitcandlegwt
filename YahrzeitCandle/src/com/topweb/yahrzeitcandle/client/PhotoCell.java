@@ -12,7 +12,7 @@ import com.google.gwt.safehtml.shared.SafeHtmlBuilder;
 		
 		 @Override
 	     public void render(Context context, FBPhoto value, SafeHtmlBuilder sb) {
-		 sb.appendHtmlConstant("<img src=\""+ value.getSrcSmall() + "\"></img>");
+		  sb.appendHtmlConstant("<img src=\""+ value.getUrl() + "\"></img>");
 
 		 }
 		 

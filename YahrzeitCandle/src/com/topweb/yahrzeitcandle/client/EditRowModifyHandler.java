@@ -12,36 +12,24 @@ import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.Widget;
 
 public class EditRowModifyHandler implements ClickHandler {
-	HebrewDateMonthInput him;
-	HebrewDateDayInput hid;
-	TextBox hiy;
-	GregDateMonthInput gmon_in;
-	TextBox gday_in;
-	TextBox gyear_in;
+	 
+
 	TextBox m_name;
-	//HebrewDate m_hebDate=null;
 	Yahrzeit m_honoree=null;
 	MyFlexTable m_myFlexTable=null;
 	
 	EditRowModifyHandler(
 			TextBox namebox,
-			HebrewDateMonthInput him,
-			HebrewDateDayInput hid,
-			TextBox hiy,
 			Yahrzeit h,
 			MyFlexTable f
 			)
 			{
 		this.m_name=namebox;
-		this.him=him;
-		this.hid=hid;
-		this.hiy=hiy;
 		m_honoree=h;
 		m_myFlexTable=f;
 			}
 	@Override
 	public void onClick(ClickEvent event) {
-		// TODO Auto-generated method stub
 		//HebrewYear
 		boolean isvalid=true;
 		int hebday=0,hebyear=0;
@@ -49,7 +37,7 @@ public class EditRowModifyHandler implements ClickHandler {
 		
 		//hebrew
 		try{
-		hebday=hid.getDay();
+		hebday=YahrzeitCandle.newHebrewDate_day.getDay();
 	}catch(Exception e){hebday=-1;}
 	if (hebday==-1) {
 		YahrzeitCandle.displayError("hebday must be numeric");
@@ -66,7 +54,7 @@ public class EditRowModifyHandler implements ClickHandler {
 
 		
 		try {
-			hebyear=Integer.parseInt(hiy.getValue());
+			hebyear=Integer.parseInt(YahrzeitCandle.newHebrewYear.getValue());
 		}catch (Exception e){hebyear=-1;}
 		if (hebyear==-1){
 			YahrzeitCandle.displayError("hebyear must be numeric");
@@ -87,9 +75,9 @@ public class EditRowModifyHandler implements ClickHandler {
 				//System.out.println("setting month, day, yr to "
 				//		+ newGregDate_mon.getMonth() + " " + gregday + " " +  gregyear);
 				m_honoree.setName(m_name.getText());
-				m_honoree.setHebMonth(him.getMonth());
-				m_honoree.setHebDay(hid.getDay());
-				m_honoree.setHebYear(Integer.parseInt(hiy.getValue()));
+				m_honoree.setHebMonth(YahrzeitCandle.newHebrewDate_mon.getMonth());
+				m_honoree.setHebDay(YahrzeitCandle.newHebrewDate_day.getDay());
+				m_honoree.setHebYear(Integer.parseInt(YahrzeitCandle.newHebrewYear.getValue()));
 					m_myFlexTable.modifyRowRequest(m_honoree);
 				
 				

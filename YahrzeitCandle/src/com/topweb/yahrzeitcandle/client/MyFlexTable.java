@@ -152,6 +152,8 @@ public class MyFlexTable {
 	}-*/;
 	  protected void addRowsConfirmed(JsArray<Yahrzeit> yahrzeitlist) {
 		 //System.out.println("yahrzeitlist.length(): " + yahrzeitlist.length());
+			//YahrzeitCandle.addYahrButton.setEnabled(true);
+
 		  if (yahrzeitlist.length()==0)return;
 		 List<YahrzeitContainer> incomingList= new ArrayList<YahrzeitContainer>();
 
@@ -194,7 +196,7 @@ int mdb=master.getYahrzeit().getDbId();
 
 				
 					flexTable.setText(row, 0, incoming.getYahrzeit().getName());
-				    flexTable.setText(row, 1, incoming.getYahrzeit().getHebDay()+ " " + YahrzeitCandle.heb_months[incoming.getYahrzeit().getHebMonth()-1]);
+				    flexTable.setText(row, 1, incoming.getYahrzeit().getHebDay()+ " " + YahrzeitCandle.heb_months[incoming.getYahrzeit().getHebMonth()]);
 				    flexTable.setText(row, 2, YahrzeitCandle.format_pretty.format(incoming.getGregDisplayDate()));
 
 				    
@@ -346,7 +348,7 @@ int mdb=master.getYahrzeit().getDbId();
 		}
 
 		private static int getYahrzeitIndexFromDatabaseId(int dbid) {
-			// TODO Auto-generated method stub
+			// 
 
 			//System.out.println("m_YahrzeitContainerList size: " +  m_YahrzeitContainerList.size());
 			ListIterator<YahrzeitContainer> i=m_YahrzeitContainerList.listIterator();
@@ -420,7 +422,57 @@ int mdb=master.getYahrzeit().getDbId();
 						    	deleteRowsConfirmed(yahrzeitlist);
 						}
 					}
-				} //status OK
+				 else if (req.getMethod().equalsIgnoreCase("modify")) {
+					 JsArray<Yahrzeit> yahrzeitlist=req.getYahrzeitList();
+						Yahrzeit h = null;
+						for (int i=0;i<yahrzeitlist.length();i++){
+						    h=yahrzeitlist.get(i);
+						    if (h!=null){
+						    	modifyRowConfirmed(h);
+						    }
+						}
+						setAllMyButtonsEnabled(true);
+						YahrzeitCandle.addYahrButton.setEnabled(true);
+				 } else if (req.getMethod().equalsIgnoreCase("add_photo")){
+						PhotoBrowser.d.hide();
+
+					    final AbsolutePanel placeholderImagePanel = new AbsolutePanel();
+					    FocusPanel fPanel = new FocusPanel();					
+
+						Console.log("got to add_photo rec'd from gwt.php: " );
+						//find the anchor that was clicked and repop with new photo
+						
+						Yahrzeit h = req.getYahrzeitList().get(0);
+						Console.log("id is " + h.getDbId() + ", photo is " + h.getPhoto());
+						if (h==null || h.getPhoto()==null) return;
+						int position= getYahrzeitIndexFromDatabaseId(h.getDbId()) + 1;
+						Console.log("position is "+ position);
+						flexTable.getWidget(position, 3).removeFromParent();
+						YahrzeitImage placeholderImage=new YahrzeitImage(h);
+					    
+				    	Console.log("setting photo to " + h.getPhoto());
+				       
+				    	fPanel.addMouseOverHandler(new MouseOverHandler() {
+							@Override
+							public void onMouseOver(MouseOverEvent event) {
+								placeholderImagePanel.add(changeClearButtons,0,0);
+							}				    	
+				    	});
+				    	fPanel.addMouseOutHandler(new MouseOutHandler(){
+
+							@Override
+							public void onMouseOut(MouseOutEvent event) {
+								changeClearButtons.removeFromParent();
+							}
+				    	
+				    	});
+				    	 			    	
+						placeholderImagePanel.add(placeholderImage);
+					    fPanel.add(placeholderImagePanel);
+					    flexTable.setWidget(position, 3, fPanel );
+						
+					}
+				}//status OK
 			else if (req.getStatus().compareToIgnoreCase("error")==0){
 				
 				if (req.getMethod().compareToIgnoreCase("need_auth")==0){
@@ -483,7 +535,7 @@ int mdb=master.getYahrzeit().getDbId();
 			//	System.out.println("modify: initial_position==new_position");
 				
 				flexTable.setText( initial_row,0 ,h.getName());
-				 flexTable.setText(initial_row, 1, h.getHebDay()+ " " + YahrzeitCandle.heb_months[h.getHebMonth()-1]);
+				 flexTable.setText(initial_row, 1, h.getHebDay()+ " " + YahrzeitCandle.heb_months[h.getHebMonth()]);
 				 flexTable.setText(initial_row, 2, YahrzeitCandle.format_pretty.format(YahrzeitContainer.getGregDisplayDate(h)));
 				 addDelButton(h);
 				 addEditButton(h);
@@ -498,7 +550,7 @@ int mdb=master.getYahrzeit().getDbId();
 				
 				
 					flexTable.setText( new_row,0 ,h.getName());
-					 flexTable.setText(new_row, 1, h.getHebDay()+ " " + YahrzeitCandle.heb_months[h.getHebMonth()-1]);
+					 flexTable.setText(new_row, 1, h.getHebDay()+ " " + YahrzeitCandle.heb_months[h.getHebMonth()]);
 					 flexTable.setText(new_row, 2, YahrzeitCandle.format_pretty.format(YahrzeitContainer.getGregDisplayDate(h)));
 					
 					 
@@ -548,38 +600,42 @@ int mdb=master.getYahrzeit().getDbId();
 		    flexTable.getCellFormatter().addStyleName(0, 5, "watchListRemoveColumn");
 	//	System.out.println ("after init new table row count is " + flexTable.getRowCount());
 	}
-		 
-private void editRow(int dbid) {
-
-			flexTable.addStyleName("editMode");
-		//	System.out.println("request to edit row " + dbid);
-			
-			YahrzeitContainer h =getYahrzeitContainerFromDbId(dbid);
-			if (h==null) {
-				return;
+		
+		void setAllMyButtonsEnabled(boolean enabled){
+			Widget w = null;
+			for (Iterator<Widget> i = flexTable.iterator();i.hasNext();){
+				if ( (w=i.next()) instanceof Button) {
+					 ((Button)w).setEnabled(enabled);
+				}
+				 
 			}
+		}
+private void editRow(int dbid) {
+		setAllMyButtonsEnabled(false);
+		YahrzeitCandle.addYahrButton.setEnabled(false);
+		flexTable.addStyleName("editMode");
+		YahrzeitContainer h =getYahrzeitContainerFromDbId(dbid);
+		if (h==null) {
+			return;
+		}
 		  final TextBox editme = new TextBox();
 		  editme.setValue(h.getYahrzeit().getName());
 		  editme.setVisibleLength((editme.getValue().length()));
 		  int row = getYahrzeitIndexFromDatabaseId(dbid)+1;
 		  flexTable.setWidget(row, 0, editme);
-		  
-		  
-		  
-		  
-		  
-		  HorizontalPanel hebpanel=new HorizontalPanel();
-		  HebrewDateMonthInput him=new HebrewDateMonthInput();
+		   
+		  HebmonthsDropdown him=YahrzeitCandle.newHebrewDate_mon;
 		  him.setMonth(h.getYahrzeit().getHebMonth());
-		  HebrewDateDayInput hid = new HebrewDateDayInput();
+		  HebrewDateDayInput hid = YahrzeitCandle.newHebrewDate_day;
 		  hid.setDay(h.getYahrzeit().getHebDay());
-		  
-		  hebpanel.add(hid.getTextBox());
-		  hebpanel.add(him.getListBox());
-		  TextBox hiy=new TextBox();
+
+		  TextBox hiy=YahrzeitCandle.newHebrewYear;
 		  hiy.setValue("" + (h.getYahrzeit().getHebYear()==0 ? YahrzeitCandle.m_thisHebrewYear :
 			  h.getYahrzeit().getHebYear()));
 		  hiy.setVisibleLength(4);
+		  HorizontalPanel hebpanel=new HorizontalPanel();
+		  hebpanel.add(hid.getTextBox());
+		  hebpanel.add(him);
 		  hebpanel.add(hiy);
 		  HebrewDate hebDate=null;
 		  try{
@@ -588,72 +644,36 @@ private void editRow(int dbid) {
 			hebDate.setHebrewDate(him.getMonth(),hid.getDay(),Integer.parseInt(hiy.getValue()));
 			
 		} catch (HebrewDateException e) {
-			// TODO Auto-generated catch block
+			// 
 			e.printStackTrace();
 		}
 
-		//System.out.println("translates to" + hebDate.formatGregorianDate_English());
-		  
-		//him,hid,hiy
-		//ChangeHandler c=null;
-		him.setId("him");
-		hid.setId("hid");
-		hiy.getElement().setId("hiy");
-		VerticalPanel datePanel=new VerticalPanel();
-		
-		
-		  
+	 
+		 
 		  HorizontalPanel gregPanel = new HorizontalPanel();
-		  GregDateMonthInput gmon_in=new GregDateMonthInput(hebDate.getGregorianMonth());
-		  TextBox gday_in=new TextBox();
-		  gday_in.setValue(""+hebDate.getGregorianDayOfMonth());
-		  gday_in.setVisibleLength(2);
-		  TextBox gyear_in=new TextBox();
-		  gyear_in.setValue(""+hebDate.getGregorianYear());
-		  gyear_in.setVisibleLength(4);
-		  gregPanel.add(gmon_in.getListBox());
-		  	gregPanel.add(gday_in);
-		  	gregPanel.add(gyear_in);
-
-		  	gmon_in.setId("gmon_in");
-		  	
-		  	gday_in.getElement().setId("gday_in");
-		  	gyear_in.getElement().setId("gyear_in");
-		  	
-		  	
-		  	EditRowDateChangeHandler dateChangeHandler = new EditRowDateChangeHandler(
-		  			him,hid,hiy,
-		  			gmon_in,gday_in,gyear_in,
-		  			row
-		  			);
-				
-				
-			
-			him.addChangeHandler(dateChangeHandler);
-			hid.addChangeHandler(dateChangeHandler);
-			hiy.addChangeHandler(dateChangeHandler);
-
-			gmon_in.addChangeHandler(dateChangeHandler);
-			gday_in.addChangeHandler(dateChangeHandler);
-			gyear_in.addChangeHandler(dateChangeHandler);
-			
-			datePanel.add(hebpanel);
-		  	datePanel.add(gregPanel);
-			  flexTable.setWidget(row, 1, datePanel);
+		  YahrzeitCandle.newGregDate_day.setText(""+hebDate.getGregorianDayOfMonth());
+		  YahrzeitCandle.newGregDate_mon.setMonth(hebDate.getGregorianMonth());
+		  YahrzeitCandle.newGregDate_year.setText(""+hebDate.getGregorianYear());
+		  gregPanel.add(YahrzeitCandle.newGregDate_day);
+		  gregPanel.add(YahrzeitCandle.newGregDate_mon);
+		  gregPanel.add(YahrzeitCandle.newGregDate_year);
+		   
+	 
+		   
+		VerticalPanel datePanel=new VerticalPanel();
+		datePanel.add(hebpanel);
+		datePanel.add(gregPanel);
+		flexTable.setWidget(row, 1, datePanel);
 
 		  	
-		  	//flexTable.setWidget(row, 2, datePanel);
-		
+		  	
 		
 		Button editOkayButton=new Button("Confirm");
 		editOkayButton.getElement().setId("editokay_"+dbid);
 		EditRowModifyHandler editRowModifyHandler = new EditRowModifyHandler(
 				editme, //name
-	  			him,hid,hiy,
-	  			//gmon_in,gday_in,gyear_in
 	  			h.getYahrzeit(),
-	  			this
-	  			);
+	  			this);
 		editOkayButton.addClickHandler(editRowModifyHandler);
 		flexTable.setWidget(row,4,editOkayButton);
 		
@@ -670,36 +690,19 @@ private void editRow(int dbid) {
 				flexTable.getRowFormatter().removeStyleName(row, "editTableRow");
 				 
 				 flexTable.setText(row, 0, h.getName());
-				 flexTable.setText(row, 1, h.getHebDay()+ " " + YahrzeitCandle.heb_months[h.getHebMonth()-1]);
+				 flexTable.setText(row, 1, h.getHebDay()+ " " + YahrzeitCandle.heb_months[h.getHebMonth()]);
 				 flexTable.setText(row, 2, YahrzeitCandle.format_pretty.format(YahrzeitContainer.getGregDisplayDate(h)));
 				 addDelButton(h);
 				 addEditButton(h);
-				 for (int i=1; i<flexTable.getRowCount();i++){
-					 	  
-						  ((Button)(flexTable.getWidget(i, 4))).setEnabled(true);
-						  ((Button)(flexTable.getWidget(i, 5))).setEnabled(true);
-					     
-				  }
-				 
+				setAllMyButtonsEnabled(true);
+				YahrzeitCandle.addYahrButton.setEnabled(true);
 			}
 			
 		}
 		);
 		flexTable.setWidget(row,5,editCancelButton);
-		
-		
-		
-			  for (int i=1; i<flexTable.getRowCount();i++){
-				  if (i!=row){
-				 	  
-					  ((Button)(flexTable.getWidget(i, 4))).setEnabled(false);
-					  ((Button)(flexTable.getWidget(i, 5))).setEnabled(false);
-						
-				  }
-				  else
-					  flexTable.getRowFormatter().setStyleName(i, "editTableRow");
-			  }
-			  hid.getTextBox().setFocus(true);
+		flexTable.getRowFormatter().setStyleName(row, "editTableRow");
+		 hid.getTextBox().setFocus(true);
 		}
 		
 	public void addRowRequest(Yahrzeit h1) {
@@ -773,7 +776,7 @@ deleteDialog.setText("delete selected yahrzeit?");
 		SvrReq svr=(SvrReq)JavaScriptObject.createObject();
 		svr.setMethod("add_photo");
 		//svr.setFbAuthResponse(YahrzeitCandle.fbAuthResponse);
-		svr.setPhoto(String.valueOf(fbPhoto.getId()));
+		h1.setPhoto(String.valueOf(fbPhoto.getId()));
 		 
 		 Yahrzeit h[] = {h1};
 	        svr.setYahrzeits(JsArrayUtils.readOnlyJsArray(h));

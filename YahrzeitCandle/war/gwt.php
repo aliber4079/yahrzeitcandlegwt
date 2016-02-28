@@ -41,17 +41,17 @@ if ($arr->{'method'}=="add") {
 	 "yahrzeitlist"=>$results));
 	 exit($j);
 }
- else if ($arr->{'method'}=="add_photo") {
-$json_array=add_photo($arr->{'yahrzeitlist'}[0]->{'id'});
-error_log(print_r(json_encode(array($json_array)),1));
-exit(json_encode(array($json_array)));
+else if ($arr->{'method'}=="add_photo") {
+	$json_array=add_photo($arr->{'yahrzeitlist'}[0]->{'id'},$arr->{'yahrzeitlist'}[0]->{'photo'});
+	error_log(print_r(json_encode($json_array),1));
+	exit(json_encode($json_array));
 }
 else if ($arr->{'method'}=="clear_photo") {
-$json_array=clear_photo($arr->{'yahrzeitlist'}[0]);
-error_log(print_r(json_encode(array($json_array)),1));
-exit(json_encode(array($json_array)));
-
-} else if ($arr->{'method'}=="resync") {
+	$json_array=clear_photo($arr->{'yahrzeitlist'}[0]);
+	error_log(print_r(json_encode(array($json_array)),1));
+	exit(json_encode(array($json_array)));
+}
+else if ($arr->{'method'}=="resync") {
   $yahrzeits=get_yahrzeits($user_id);
   error_log("got yahrzeits");
   $userprefs=get_userprefs($user_id);
@@ -59,8 +59,8 @@ exit(json_encode(array($json_array)));
   $j=json_encode($json_array);
   error_log("resync json: $j");
   exit($j);
-
-} else if ($arr->{'method'}=="delete") {
+}
+else if ($arr->{'method'}=="delete") {
    $yahrzeits=$arr->{'yahrzeitlist'};
    foreach ($yahrzeits as $yahrzeit) {
      $res=delete_yahrzeit($user_id,$yahrzeit->{"id"});
@@ -78,8 +78,8 @@ exit(json_encode(array($json_array)));
     //error_log("modify item: ".$yahrzeit->{'id'});
      $res=modify_yahrzeit($user_id,$yahrzeit);
    if ($res!=null) {
-         $j=json_encode(Array(Array("status"=>"OK","method"=>"modify",
-"yahrzeitlist"=>array($yahrzeit))));
+         $j=json_encode(Array("status"=>"OK","method"=>"modify",
+"yahrzeitlist"=>array($yahrzeit)));
         print ($j);
         //error_log("returning ".$j);
 }

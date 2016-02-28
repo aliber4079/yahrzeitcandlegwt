@@ -69,8 +69,13 @@ public class YahrzeitCandle implements EntryPoint {
 	 * returns an error.
 	 * 
 	 */
-	public static final String[]heb_months={"Nissan",
-		"Iyar", "Sivan", "Tamuz", "Av",
+	public static final String[]heb_months={
+		"",
+		"Nissan",
+		"Iyar", 
+		"Sivan", 
+		"Tamuz", 
+		"Av",
 		"Elul",
 		"Tishrei",
 		"Cheshvan",
@@ -78,12 +83,13 @@ public class YahrzeitCandle implements EntryPoint {
 		"Tevet",
 		"Shvat",
 		"Adar",
-		"Adar II"};
-	public static final String[]greg_months={"January",
+		"Adar II"
+		};
+	public static final String[]greg_months={"","January",
 		"February","March","April",
 		"May", "June", "July",
 		"August","September","October",
-		"November","December"};
+		"November","December",""};
 	
 	private static VerticalPanel mainPanel = new VerticalPanel();
 	public static YahrzeitCandle sw_singleton=null;
@@ -99,17 +105,17 @@ public class YahrzeitCandle implements EntryPoint {
 				validateDates(((Widget)e.getSource()).getTitle());
 				
 				}};
-	  private static HebrewDateMonthInput newHebrewDate_mon=new HebrewDateMonthInput();
-	  private static HebrewDateDayInput newHebrewDate_day=new HebrewDateDayInput();
-	  private static TextBox newHebrewYear = new TextBox(); 
+	  static HebmonthsDropdown newHebrewDate_mon=new HebmonthsDropdown(m_hebDate.getHebrewMonth());
+	  static HebrewDateDayInput newHebrewDate_day=new HebrewDateDayInput();
+	  static TextBox newHebrewYear = new TextBox(); 
 	  //private 
-	  private static Button addYtoListButton = new Button("Add");
+	  static Button addYtoListButton = new Button("Add");
 	  private static Button testAjaxButton = new Button("testAjax");
 	  private static Label lastUpdatedLabel = new Label();
 	  private static Label errDisplay = new Label("");
-	private static TextBox newGregDate_day=new TextBox();
-	private static TextBox newGregDate_year=new TextBox();
-	private static GregDateMonthInput newGregDate_mon= new GregDateMonthInput();
+	static TextBox newGregDate_day=new TextBox();
+	static TextBox newGregDate_year=new TextBox();
+	static GregmonthsDropdown newGregDate_mon= new GregmonthsDropdown(YahrzeitCandle.m_hebDate.getGregorianMonth());
 	static final String JSON_URL = /*GWT.getModuleBaseURL()+*/  "gwt.php";
 	static final String photoUploaderURL = GWT.getModuleBaseURL()  + "gwt/photouploader.php";
 	private static Timer displayTimer=null;
@@ -175,18 +181,16 @@ public static String access_token=null;
        					// handle the result
 				       $wnd.console && $wnd.console.log("got perms");
 				       $wnd.console && $wnd.console.log(response);
-				       @com.topweb.yahrzeitcandle.client.YahrzeitCandle::processPermsResponse(Lcom/google/gwt/core/client/JsArray;)(response);
+				       @com.topweb.yahrzeitcandle.client.YahrzeitCandle::processPermsResponse(Lcom/google/gwt/core/client/JsArray;)(response.data);
      				}
    				});
 			});
 		}
 	}-*/;
 
-	public static void processPermsResponse(JsArray<PermsResponse>  perms) {
-		Console.log("process perms response");
-		Console.logAsObject(perms);
+	public static void processPermsResponse( JsArray<Perm> perms) {
 		for (int i=0;i<perms.length();i++){
-			PermsResponse p = perms.get(i);
+			Perm p = perms.get(i);
 			if (p.getPermission()=="email" && p.getStatus()=="granted"){
 				fqlAllowEmail=true;
 			}
@@ -207,9 +211,8 @@ public static String access_token=null;
 		
 		intro_msg=MyTextResources.INSTANCE.getIntroMsg().getText();
 		introLabel.setHTML(intro_msg);
-		newHonoree.setValue("John Doe");
 	    addPanel.add(newHonoree);
-	    addPanel.add(newHebrewDate_mon.getListBox());
+	    addPanel.add(newHebrewDate_mon);
 	    addPanel.add(newHebrewDate_day.getTextBox());
 	    m_thisHebrewYear=m_hebDate.getHebrewYear();
 	     newHebrewYear.setVisibleLength(4);
@@ -217,7 +220,7 @@ public static String access_token=null;
 	     newHebrewYear.setTitle("hebyear");
 	     newHebrewYear.addChangeHandler(m_changedate);
 	    addPanel.add(newHebrewYear);
-	    addPanel1.add(newGregDate_mon.getListBox());
+	    addPanel1.add(newGregDate_mon);
 	    newGregDate_day.setVisibleLength(2);
 	    newGregDate_day.setTitle("gregday");
 	   // Date today = new Date();
@@ -242,6 +245,7 @@ public static String access_token=null;
 				addPanel.setVisible(false);
 				addPanel1.setVisible(false);
 				addYahrButton.setEnabled(true);
+				yahrFlexTable.setAllMyButtonsEnabled(true);
 				
 			}
 	    	
@@ -287,9 +291,11 @@ public static String access_token=null;
 
 			@Override
 			public void onClick(ClickEvent event) {
+				sw_singleton.resetAddFields();
 				addYahrButton.setEnabled(false);
 				addPanel.setVisible(true);
 				addPanel1.setVisible(true);
+				yahrFlexTable.setAllMyButtonsEnabled(false);
 			}
 	    
 	    }
@@ -447,12 +453,8 @@ public static String access_token=null;
 		
 		final String Yahrzeit = newHonoree.getText().trim();
 	    newHonoree.setFocus(true);
-
-	   
 	    if (Yahrzeit.length()==0) return;
 
-
-	    
 	    //disable fields
 	    newHonoree.setEnabled(false);
 	    newHebrewDate_mon.setEnabled(false);
@@ -512,10 +514,8 @@ static HebrewDate calc_greg_date_todisplay(int y_hmon, int y_hebday) {
 		
 		e.printStackTrace();
 	}
-//System.out.println("gregequiv is " + gregEquiv.formatGregorianDate_English());
-    return gregEquiv;
-    
-     }
+     return gregEquiv;
+    }
 	
 
 
@@ -526,8 +526,13 @@ static HebrewDate calc_greg_date_todisplay(int y_hmon, int y_hebday) {
 
 
 private void resetAddFields() {
-	
-    newHonoree.setValue("");
+	newHonoree.setValue("John Doe");
+    addPanel.add(newHebrewDate_mon);
+    addPanel.add(newHebrewDate_day.getTextBox());
+    addPanel.add(newHebrewYear);
+    addPanel1.add(newGregDate_mon);
+    addPanel1.add(newGregDate_day);
+    addPanel1.add(newGregDate_year);
     m_hebDate=new HebrewDate();
     newHebrewDate_mon.setMonth(m_hebDate.getHebrewMonth());
     newHebrewDate_day.setDay(m_hebDate.getHebrewDate());
@@ -550,7 +555,7 @@ private void resetAddFields() {
 
 
 public  void freeAddFields() {
-	
+	addYahrButton.setEnabled(true);
     newHonoree.setEnabled(true);
     newHebrewDate_mon.setEnabled(true);
     newHebrewDate_day.setEnabled(true);
@@ -674,13 +679,13 @@ public static native void loginToFB() /*-{
 			//		+ newGregDate_mon.getMonth() + " " + gregday + " " +  gregyear);
 			try {
 				m_hebDate.setDate(newGregDate_mon.getMonth(), gregday, gregyear);
+				Console.log("m_hebDate.getHebrewMonth() is " + m_hebDate.getHebrewMonth());
 				newHebrewDate_mon.setMonth(m_hebDate.getHebrewMonth());
 				newHebrewDate_day.setDay(m_hebDate.getHebrewDate());
-				newHebrewYear.setValue(""+m_hebDate.getHebrewYear());
+				newHebrewYear.setValue("" + m_hebDate.getHebrewYear());
 			} catch (HebrewDateException e) {
-				
 				e.printStackTrace();
 			}
-		}
+		  }
 		}
 }

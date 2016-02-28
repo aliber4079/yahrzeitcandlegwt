@@ -12,6 +12,8 @@ import com.google.gwt.cell.client.TextCell;
 import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.JsArray;
+import com.google.gwt.core.client.JsonUtils;
+
 import java.util.HashMap;
 
 //import org.mortbay.util.ajax.JSON;
@@ -46,6 +48,8 @@ import com.google.gwt.user.client.ui.UIObject;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.FormPanel.SubmitCompleteEvent;
 import com.google.gwt.user.client.ui.FormPanel.SubmitEvent;
+import com.google.gwt.view.client.AsyncDataProvider;
+import com.google.gwt.view.client.HasData;
 import com.google.gwt.view.client.ListDataProvider;
 import com.google.gwt.view.client.SelectionChangeEvent;
 import com.google.gwt.view.client.SingleSelectionModel;
@@ -66,73 +70,83 @@ import com.google.gwt.json.client.JSONParser;
     static Button m_confirmbutton=new Button("Select");
     static Button m_uploadbutton=new Button ("Upload...");
     static Yahrzeit activeYahrzeit=null;
-    //static Label m_resultLabel = new Label();
     static Button m_cancelbutton=new Button("Cancel");
     public static DialogBox d=new DialogBox();
 	static HashMap<String,FBAlbum> m_aid_to_album = new HashMap<String,FBAlbum>();
-	static ListDataProvider<FBAlbum> albumDataProvider=null;
+	static AsyncDataProvider<FBAlbum> albumDataProvider=null;
 	static CellBrowser browser=null;
 	public PhotoBrowser(){
-
-		    d.addCloseHandler(new CloseHandler<PopupPanel>(){
+	    d.addCloseHandler(new CloseHandler<PopupPanel>(){
+			@Override
+			public void onClose(CloseEvent<PopupPanel> event) {
+				Console.log("onclose event");
+				d.setText("");
+				activeYahrzeit=null;
+				MyFlexTable.changeClearButtons.removeFromParent();
+			}
+	    });
+		}
+	
+private static class CustomTreeModel implements TreeViewModel {
+    public CustomTreeModel() {
+	     albumDataProvider =
+    		 new AsyncDataProvider<FBAlbum>(){
 				@Override
-				public void onClose(CloseEvent<PopupPanel> event) {
-					Console.log("onclose event");
-					d.setText("");
-					activeYahrzeit=null;
-					MyFlexTable.changeClearButtons.removeFromParent();
-				}
-		    });
-
-	}
-	private static class CustomTreeModel implements TreeViewModel {
-	    public CustomTreeModel() {
-
-	    	
-		     albumDataProvider = new ListDataProvider<FBAlbum>( new ArrayList<FBAlbum>(m_aid_to_album.values()));
-		     m_confirmbutton.addClickHandler(new ClickHandler(){
-					@Override
-						public void onClick(ClickEvent event) {
-						if (selectionModel.getSelectedObject()!=null) {
-							String pid=selectionModel.getSelectedObject().id;
-							
-							Console.log("you chose " + pid);
-							MyFlexTable.addPhotoRequest(activeYahrzeit,selectionModel.getSelectedObject());
-							selectionModel.setSelected(selectionModel.getSelectedObject(),false);
+				protected void onRangeChanged(HasData<FBAlbum> display) {
+					FBApi api=new FBApi(){
+						@Override
+						public void apiCallback(FBApiResponse response) {
+							Console.log("apicallback");
+							Console.logAsObject(response);
+							//display.getVisibleItems();
+							albumDataProvider.updateRowData(1,null);
 						}
-						d.hide();
-						}
-				    });
-		     m_cancelbutton.addClickHandler(new ClickHandler(){
-
-				@Override
-				public void onClick(ClickEvent event) {
-					if(selectionModel.getSelectedObject()!=null)
-						selectionModel.setSelected(selectionModel.getSelectedObject(),false);
-					d.hide();
-					
-				}});
-		     
-		     m_uploadbutton.addClickHandler(new ClickHandler() {
-
-				@Override
-				public void onClick(ClickEvent event) {
-					showUploader();
+					};
+					api.get("me?fields=albums.fields(id,name,picture.type(thumbnail))");
+					//api.get("me?fields=albums.fields(id,name,photos.fields(id,images.fields(source)))");
 				}
-		    	 
-		     });
+	     };
+	    		
+	     m_confirmbutton.addClickHandler(new ClickHandler(){
+		@Override
+		public void onClick(ClickEvent event) {
+			if (selectionModel.getSelectedObject()!=null) {
+				String pid=selectionModel.getSelectedObject().getId();
+				Console.log("you chose " + pid);
+				MyFlexTable.addPhotoRequest(activeYahrzeit,selectionModel.getSelectedObject());
+				selectionModel.setSelected(selectionModel.getSelectedObject(),false);
+			}
+			d.hide();
+			}
+	    });
+	     m_cancelbutton.addClickHandler(new ClickHandler(){
+		@Override
+		public void onClick(ClickEvent event) {
+			if(selectionModel.getSelectedObject()!=null)
+				selectionModel.setSelected(selectionModel.getSelectedObject(),false);
+			d.hide();
+			
+		}});
 		     
-		    selectionModel.addSelectionChangeHandler(new SelectionChangeEvent.Handler() {
-	            public void onSelectionChange(SelectionChangeEvent event) {
-	            	Console.log("onSelectionChange");
-	              if (selectionModel.getSelectedObject() != null) {
-	                m_confirmbutton.setEnabled(true);
-	              } else {
-	            	  Console.log("nothing is selected");
-	            	  m_confirmbutton.setEnabled(false);
-	              }
-	            }
-	          });
+	     m_uploadbutton.addClickHandler(new ClickHandler() {
+			@Override
+			public void onClick(ClickEvent event) {
+				showUploader();
+			}
+	    	 
+	     });
+		     
+	    selectionModel.addSelectionChangeHandler(new SelectionChangeEvent.Handler() {
+            public void onSelectionChange(SelectionChangeEvent event) {
+            	Console.log("onSelectionChange");
+              if (selectionModel.getSelectedObject() != null) {
+                m_confirmbutton.setEnabled(true);
+              } else {
+            	  Console.log("nothing is selected");
+            	  m_confirmbutton.setEnabled(false);
+              }
+            }
+          });
 		}
 
 		/**
@@ -165,21 +179,16 @@ import com.google.gwt.json.client.JSONParser;
 	        	  }
 	          }
 	        };
-	      
 	      // Return a node info that pairs the data with a cell.
 	      return new DefaultNodeInfo<FBAlbum>(albumDataProvider,cell);
-	    	} else 
-	    	if (value instanceof  FBAlbum) 	{
-	    		Console.log("number of photos in this album: " + ((FBAlbum)value).getPhotos().size());
-	    		ListDataProvider<FBPhoto> photoDataProvider = 
-	    			new ListDataProvider<FBPhoto>(
-	    	            ((FBAlbum)value).getPhotos());	    	       
-
-	    	        Cell<FBPhoto> cell1= new PhotoCell();
-	    	        return new DefaultNodeInfo<FBPhoto>(photoDataProvider, cell1,selectionModel,null);
-	      
+	    } else 
+	    if (value instanceof  FBAlbum) 	{
+			ListDataProvider<FBPhoto> photoDataProvider = 
+				new ListDataProvider<FBPhoto>(((FBAlbum)value));	    	       
+		        Cell<FBPhoto> cell1= new PhotoCell();
+		        return new DefaultNodeInfo<FBPhoto>(photoDataProvider, cell1,selectionModel,null);
 	      }
-	    	return null;
+    	return null;
 	    }
 
 	    /**
@@ -193,12 +202,8 @@ import com.google.gwt.json.client.JSONParser;
 	      return false;
 	    }
 	}
-
-   
-
-
 	 
-	public static void showUploader(){
+public static void showUploader(){
 
 		final FormPanel form = new FormPanel();
 	    form.setAction(YahrzeitCandle.JSON_URL);
@@ -225,8 +230,7 @@ import com.google.gwt.json.client.JSONParser;
 	    gotoChooser.addClickHandler(new ClickHandler(){
 	    	@Override
 	    	public void onClick(ClickEvent e){
-	    		
-	    		getAlbums();
+	    		showAlbums();
 	    	}
 	    	
 	    });
@@ -322,81 +326,32 @@ public static void finishResizing(int newtop){
     MyFlexTable.resizeFbIframe();
 }
 
-public static void gotAlbums(JsArray<FBPhotoAlbumData> albums) {
-	Console.log("got to gotAlbums");
-	Console.logAsObject(albums);
-	Console.log("num Albums: " + albums.length());
+
+public static  void showAlbums(){
 	
-	for (int i=0;i<albums.length();i++){
-		if (albums.get(i).getSize()==0) continue;
-		FBAlbum f = new FBAlbum(albums.get(i));
-		m_aid_to_album.put(f.getId(), f);
-	
-	}
-
-	Console.log("finished iterating");
-	getPhotos(albums);
-
-
-  }
-
-public static void gotPhotos(JsArray<FBPhotoAlbumData> photos) {
-	Console.log("got to gotPhotos with length " + photos.length());
-	//Console.logAsObject(photos);
-	for (int i=0;i<photos.length();i++) {
-		FBAlbum a = m_aid_to_album.get(photos.get(i).getAid());
-		a.addPhoto(new FBPhoto(photos.get(i)));
-	}
 	TreeViewModel m_treeViewModel = new CustomTreeModel();
-	 browser = new CellBrowser(m_treeViewModel, null);
+	CellBrowser.Builder<TreeViewModel> b 
+	 =new CellBrowser.Builder<TreeViewModel>(m_treeViewModel,null);
+	b.loadingIndicator(new Label("please wait..."));
+	b.pagerFactory(null);
+	browser=b.build();
 	 HorizontalPanel hPanel=new HorizontalPanel();
-	    hPanel.add(m_confirmbutton);
-	    hPanel.add(m_cancelbutton);
-	    hPanel.add(m_uploadbutton);
-		VerticalPanel vPanel = new VerticalPanel();
+    hPanel.add(m_confirmbutton);
+    hPanel.add(m_cancelbutton);
+    hPanel.add(m_uploadbutton);
+	VerticalPanel vPanel = new VerticalPanel();
 
-	    vPanel.add(browser);
-	    vPanel.add(hPanel);	 
-//populate cellbrowser
+    vPanel.add(browser);
+    vPanel.add(hPanel);	 
+    
+    //populate cellbrowser
     browser.setSize("600px", "200px");
     browser.setKeyboardSelectionPolicy(KeyboardSelectionPolicy.ENABLED);
    
     m_confirmbutton.setEnabled(false);
-	 d.setWidget(vPanel);
-    
-    		
-    
-   
+	d.setWidget(vPanel);
+	 
   }
-private static native void getPhotos(JsArray<FBPhotoAlbumData> albums) /*-{ 
-	
-	$wnd.FB.api(
-	 {method : 'fql.query',
-	 	query : 'select pid,aid,src_small,src_big from photo where ' +
-	 	'aid in (SELECT aid FROM album WHERE owner = me())'},	
-	$entry(@com.topweb.yahrzeitcandle.client.PhotoBrowser::gotPhotos(Lcom/google/gwt/core/client/JsArray;)));
-		}-*/;
-
-
-
-public static void getAlbums(){
-	Label l = new Label("Please wait...");
-	l.setPixelSize(600, 200);
-	d.setWidget(l);
-	getAlbumsNative();
-}
-public static native void getAlbumsNative() /*-{
-
-$wnd.FB.getLoginStatus(function (response) {
-if(response.status=='connected'){
-$wnd.FB.api(
-		 {method : 'fql.query',
-		 	query : 'SELECT aid, name, size FROM album WHERE owner = me()'},	
-		$entry(@com.topweb.yahrzeitcandle.client.PhotoBrowser::gotAlbums(Lcom/google/gwt/core/client/JsArray;)));
-}
-});
-}-*/;
-
 }
 
 
