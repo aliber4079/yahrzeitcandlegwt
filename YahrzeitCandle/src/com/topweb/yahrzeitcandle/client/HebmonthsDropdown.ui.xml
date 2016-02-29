@@ -1,0 +1,24 @@
+<!DOCTYPE ui:UiBinder SYSTEM "http://dl.google.com/gwt/DTD/xhtml.ent">
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+	xmlns:g="urn:import:com.google.gwt.user.client.ui">
+	<ui:style>
+	
+	</ui:style>
+	<g:HTMLPanel>
+	<g:ListBox  ui:field='listBox'>
+			<g:item value='1'>Nissan</g:item>
+			<g:item value='2'>Iyar</g:item>
+			<g:item value='3'>Sivan</g:item>
+			<g:item value='4'>Tamuz</g:item>
+			<g:item value='5'>Av</g:item>
+			<g:item value='6'>Elul</g:item>
+			<g:item value='7'>Tishrei</g:item>
+			<g:item value='8'>Cheshvan</g:item>
+			<g:item value='9'>Kislev</g:item>
+			<g:item value='10'>Tevet</g:item>
+			<g:item value='11'>Shvat</g:item>
+			<g:item value='12'>Adar</g:item>
+			<g:item value='13'>Adar II</g:item>
+		</g:ListBox>
+	</g:HTMLPanel>
+</ui:UiBinder> 

@@ -6,24 +6,35 @@ import java.util.List;
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.JsArray;
 
-public final class FBAlbum extends ArrayList<FBPhoto> {
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = -7353959587734568900L;
-	String m_id=null,m_name=null;
-	FBAlbum(String id, String name){
-		this.m_id=id;
-		this.m_name=name;
+ 
+
+class FBAlbum{
+	String id;
+	String name;
+	List<FBPhoto> photos;
+	FBAlbum(){
+		photos=new ArrayList<FBPhoto>();
 	}
-	public   String getId() { return this.m_id ;}
-	public   void setId(String id){this.m_id=id;}
-	
-	public  String getName() {
-		return m_name;
+	public List<String> getPhotoUrls() {
+		List<String>urls=new ArrayList<String>();
+		
+		for (int i=0;i<photos.size();i++){
+			urls.add(photos.get(i).getUrl());
+		}
+		return urls;
 	}
-	public  void setName(String name) {
-		this.m_name = name;
+	public FBAlbum(String id, String name) {
+		photos=new ArrayList<FBPhoto>();
+		this.id=id;
+		this.name=name;
 	}
-	 
+	public void addPhoto(FBPhoto p){
+		photos.add(p);
+	}
+	public String getName(){
+		return this.name;
+	}
+	public List<FBPhoto> getPhotos(){
+		return photos;
+	}
 }

@@ -48,33 +48,42 @@ import com.google.gwt.user.client.ui.UIObject;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.FormPanel.SubmitCompleteEvent;
 import com.google.gwt.user.client.ui.FormPanel.SubmitEvent;
-import com.google.gwt.view.client.AsyncDataProvider;
 import com.google.gwt.view.client.HasData;
 import com.google.gwt.view.client.ListDataProvider;
 import com.google.gwt.view.client.SelectionChangeEvent;
 import com.google.gwt.view.client.SingleSelectionModel;
 import com.google.gwt.view.client.TreeViewModel;
 import com.google.gwt.view.client.TreeViewModel.DefaultNodeInfo;
+
+ 
+
 import com.google.gwt.safehtml.shared.SafeHtmlBuilder;
 import com.google.gwt.cell.client.ValueUpdater; 
 import com.google.gwt.json.client.JSONObject; 
 import com.google.gwt.json.client.JSONParser;
 
-
+//me?fields=albums.fields(id,name,photos.fields(id,picture.type(small)))
 /**
  * Entry point classes define <code>onModuleLoad()</code>.
  */
 
   public class PhotoBrowser  {
-    private final static SingleSelectionModel<FBPhoto> selectionModel = new SingleSelectionModel<FBPhoto>();
+	    private final static SingleSelectionModel<FBPhoto> selectionModel = new SingleSelectionModel<FBPhoto>();
+
+	  
+
+		
+	static List<FBAlbum> albums=null;
+	  
     static Button m_confirmbutton=new Button("Select");
     static Button m_uploadbutton=new Button ("Upload...");
     static Yahrzeit activeYahrzeit=null;
     static Button m_cancelbutton=new Button("Cancel");
     public static DialogBox d=new DialogBox();
 	static HashMap<String,FBAlbum> m_aid_to_album = new HashMap<String,FBAlbum>();
-	static AsyncDataProvider<FBAlbum> albumDataProvider=null;
+	//static ListDataProvider<FBPhoto> photoDataProvider=null;
 	static CellBrowser browser=null;
+	//private static ListDataProvider<FBAlbum> albumDataProvider=null;
 	public PhotoBrowser(){
 	    d.addCloseHandler(new CloseHandler<PopupPanel>(){
 			@Override
@@ -86,26 +95,27 @@ import com.google.gwt.json.client.JSONParser;
 			}
 	    });
 		}
+	public static List<FBAlbum> parseAlbumDataJ(FBAlbumData o){
+		List<FBAlbum> l = new ArrayList<FBAlbum>();
+		for (int i=0;i<o.size();i++){
+			FBAlbum a = new FBAlbum(o.getId(i),o.getName(i));
+			JsArray<PhotoNative> p=o.getPhotos(i);
+			if (p==null){
+				continue;
+			}
+			for (int j=0;j<p.length();j++){
+				FBPhoto p1 = new FBPhoto(p.get(j).getId(),p.get(j).getUrl());
+				a.addPhoto(p1);
+			}
+			l.add(a);
+		}
+		return l;
+	}
 	
 private static class CustomTreeModel implements TreeViewModel {
+	
+	ListDataProvider<FBAlbum> albumdataprovider =null;
     public CustomTreeModel() {
-	     albumDataProvider =
-    		 new AsyncDataProvider<FBAlbum>(){
-				@Override
-				protected void onRangeChanged(HasData<FBAlbum> display) {
-					FBApi api=new FBApi(){
-						@Override
-						public void apiCallback(FBApiResponse response) {
-							Console.log("apicallback");
-							Console.logAsObject(response);
-							//display.getVisibleItems();
-							albumDataProvider.updateRowData(1,null);
-						}
-					};
-					api.get("me?fields=albums.fields(id,name,picture.type(thumbnail))");
-					//api.get("me?fields=albums.fields(id,name,photos.fields(id,images.fields(source)))");
-				}
-	     };
 	    		
 	     m_confirmbutton.addClickHandler(new ClickHandler(){
 		@Override
@@ -155,40 +165,26 @@ private static class CustomTreeModel implements TreeViewModel {
 	     */
 	  
 	    public <T> NodeInfo<?> getNodeInfo(T value) {
-	      /*
-	       * Create some data in a data provider. Use the parent value as a prefix
-	       * for the next level.
-	       */
-	      
-	    if (value == null) {
-	      Cell<FBAlbum> cell = 
-	    	  new AbstractCell<FBAlbum>("click") {
-	          @Override
-	          public void render(Context context, FBAlbum value, SafeHtmlBuilder sb) {
-	            if (value != null) {
-	              sb.appendEscaped(value.getName());
-	            }
-	          }
-	          @Override
-	          public void  onBrowserEvent(Context context, Element parent, FBAlbum value,
-	        	        NativeEvent event, ValueUpdater<FBAlbum> valueUpdater) {
-	        	  Console.log("clicked onto a different album");
-	        	  if (selectionModel.getSelectedObject()!=null) {
-	        		  selectionModel.setSelected(selectionModel.getSelectedObject(),false);
-	        	  		m_confirmbutton.setEnabled(false);
-	        	  }
-	          }
-	        };
-	      // Return a node info that pairs the data with a cell.
-	      return new DefaultNodeInfo<FBAlbum>(albumDataProvider,cell);
-	    } else 
-	    if (value instanceof  FBAlbum) 	{
-			ListDataProvider<FBPhoto> photoDataProvider = 
-				new ListDataProvider<FBPhoto>(((FBAlbum)value));	    	       
-		        Cell<FBPhoto> cell1= new PhotoCell();
-		        return new DefaultNodeInfo<FBPhoto>(photoDataProvider, cell1,selectionModel,null);
-	      }
-    	return null;
+	    	if (value==null){
+				// LEVEL 0, list of albums
+				albumdataprovider = new ListDataProvider<FBAlbum>(albums);
+				return new DefaultNodeInfo<FBAlbum>(albumdataprovider,new AbstractCell<FBAlbum>(){
+					@Override
+					public void render(com.google.gwt.cell.client.Cell.Context context, FBAlbum value,
+							SafeHtmlBuilder sb) {
+						if (value != null) {
+				              sb.appendEscaped(value.getName());
+				        }
+					}
+				});	
+			} else if (value instanceof FBAlbum) {
+		        // LEVEL 1.
+				 
+				ListDataProvider<FBPhoto> photodataprovider = 
+					new ListDataProvider<FBPhoto>(((FBAlbum)value).getPhotos());
+				return new DefaultNodeInfo<FBPhoto>(photodataprovider,new PhotoCell(),selectionModel,null);
+			}
+			return null;
 	    }
 
 	    /**
@@ -230,7 +226,7 @@ public static void showUploader(){
 	    gotoChooser.addClickHandler(new ClickHandler(){
 	    	@Override
 	    	public void onClick(ClickEvent e){
-	    		showAlbums();
+	    		showPhotoBrowser();
 	    	}
 	    	
 	    });
@@ -327,30 +323,52 @@ public static void finishResizing(int newtop){
 }
 
 
-public static  void showAlbums(){
+public static  void showPhotoBrowser(){
 	
-	TreeViewModel m_treeViewModel = new CustomTreeModel();
-	CellBrowser.Builder<TreeViewModel> b 
-	 =new CellBrowser.Builder<TreeViewModel>(m_treeViewModel,null);
-	b.loadingIndicator(new Label("please wait..."));
-	b.pagerFactory(null);
-	browser=b.build();
-	 HorizontalPanel hPanel=new HorizontalPanel();
-    hPanel.add(m_confirmbutton);
-    hPanel.add(m_cancelbutton);
-    hPanel.add(m_uploadbutton);
-	VerticalPanel vPanel = new VerticalPanel();
+	
+	Label l = new Label("Please wait...");
+	l.setPixelSize(600, 200);
+	d.setWidget(l);
+	
+	FBApi api=new FBApi(){
 
-    vPanel.add(browser);
-    vPanel.add(hPanel);	 
-    
-    //populate cellbrowser
-    browser.setSize("600px", "200px");
-    browser.setKeyboardSelectionPolicy(KeyboardSelectionPolicy.ENABLED);
-   
-    m_confirmbutton.setEnabled(false);
-	d.setWidget(vPanel);
-	 
+		@Override
+		public void apiCallback(FBApiResponse response) {
+			albums=parseAlbumDataJ((FBAlbumData)response);
+			 
+			
+			/*for (int i=0;i<la.size();i++){
+		    	Console.log(la.get(i).getName());
+		    	for (int j=0;j<la.get(i).getPhotos().size();j++){
+		    		Console.log(la.get(i).getPhotos().get(j).getId());
+		    	}
+		    }
+			
+			if (true) return;*/
+			TreeViewModel model = new CustomTreeModel();
+			CellBrowser.Builder<TreeViewModel> b 
+			 =new CellBrowser.Builder<TreeViewModel>(model,null);
+			b.pagerFactory(null);
+			browser=b.build();
+			HorizontalPanel hPanel=new HorizontalPanel();
+		    hPanel.add(m_confirmbutton);
+		    hPanel.add(m_cancelbutton);
+		    hPanel.add(m_uploadbutton);
+			VerticalPanel vPanel = new VerticalPanel();
+
+		    vPanel.add(browser);
+		    vPanel.add(hPanel);
+		    
+		    //populate cellbrowser
+		    browser.setSize("600px", "200px");
+		    browser.setKeyboardSelectionPolicy(KeyboardSelectionPolicy.ENABLED);
+		    m_confirmbutton.setEnabled(false);
+			d.setWidget(vPanel);
+		}
+		
+	};
+	api.get("/me?fields=albums.fields(id,name,photos.fields(id,picture.type(small)))");
+
   }
 }
 
