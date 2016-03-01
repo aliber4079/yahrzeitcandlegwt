@@ -3,7 +3,7 @@ package com.topweb.yahrzeitcandle.client;
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.JsArray;
  
-	final class FBAlbumData extends FBApiResponse {
+	final class FBAlbumData extends JavaScriptObject {
 		protected FBAlbumData(){}
 		public  native int size() /*-{
 			$wnd.console.log("returning size: " + this.albums.data.length);

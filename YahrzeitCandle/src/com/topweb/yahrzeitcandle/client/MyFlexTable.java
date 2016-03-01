@@ -102,18 +102,7 @@ public class MyFlexTable {
 					((AbsolutePanel)((Widget)event.getSource()).getParent().getParent()).getWidget(0);
 				PhotoBrowser.activeYahrzeit=curImage.getYahrzeit();
 				Console.log("active Yahrzeit: " + PhotoBrowser.activeYahrzeit.getName());
-				/*Label l = new Label("Please wait...");
-				l.setPixelSize(600, 200);
-				PhotoBrowser.d.setText("Photo for Yahrzeit of " + PhotoBrowser.activeYahrzeit.getName());
-				PhotoBrowser.d.setWidget(l);
-				PhotoBrowser.d.setPopupPositionAndShow(new PopupPanel.PositionCallback() {
-			          public void setPosition(int offsetWidth, int offsetHeight) {
-			        	  Console.log("browser.getOffsetHeight: " + offsetHeight);
-			            int top = (Window.getScrollTop() + offsetHeight / 3);
-			            PhotoBrowser.d.setPopupPosition(5, top);
-			          }
-			        });
-				PhotoBrowser.getAlbums();*/
+				
 				PhotoBrowser.showUploader();
 				
 			}
@@ -235,8 +224,17 @@ int mdb=master.getYahrzeit().getDbId();
 							public void onClick(ClickEvent event) {
 								PhotoBrowser.activeYahrzeit=((YAddPhotoButton)event.getSource()).getYahrzeit();
 								Console.log("active Yahrzeit: " + PhotoBrowser.activeYahrzeit.getName());
-								  if (!YahrzeitCandle.fqlAllowPhotos) {
-									YahrzeitCandle.fblogin("user_photos");
+								  if (YahrzeitCandle.perms.get("user_photos")==null || YahrzeitCandle.perms.get("user_photos").compareTo("granted")!=0) {
+									  new FBLogin(){
+
+										@Override
+										public void apiCallback(FBAuthResponse response) {
+											 Console.log(response.getStatus());
+											
+										}
+										  
+									  }.login("user_photos");
+									//YahrzeitCandle.fblogin("user_photos");
 								}else {
 									
 									PhotoBrowser.showUploader();

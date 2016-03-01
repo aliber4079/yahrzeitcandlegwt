@@ -201,46 +201,31 @@ private static class CustomTreeModel implements TreeViewModel {
 	 
 public static void showUploader(){
 
-		final FormPanel form = new FormPanel();
-	    form.setAction(YahrzeitCandle.JSON_URL);
 
 	    // Because we're going to add a FileUpload widget, we'll need to set the
 	    // form to use the POST method, and multipart MIME encoding.
-	    form.setEncoding(FormPanel.ENCODING_MULTIPART);
-	    form.setMethod(FormPanel.METHOD_POST);
-
 	    // Create a panel to hold all of the form widgets.
 	    final VerticalPanel panel = new VerticalPanel();
-	    form.setWidget(panel);
-
 	    panel.add(new Label("Upload ..."));
-
-
 	    Hidden authresponse= new Hidden("authResponse",(new JSONObject(YahrzeitCandle.fbAuthResponse)).toString());
 	    panel.add(authresponse);
 	    Hidden yahrzeit = new Hidden("yahrzeit",(new JSONObject(activeYahrzeit).toString()));
 	    panel.add(yahrzeit);
-	    
-
 	    Button gotoChooser = new Button("browse Facebook albums...");
 	    gotoChooser.addClickHandler(new ClickHandler(){
 	    	@Override
 	    	public void onClick(ClickEvent e){
 	    		showPhotoBrowser();
 	    	}
-	    	
 	    });
-	    
+    	final FormPanel form = new FormPanel();
 	    // Create a FileUpload widget.
-	   Hidden maxsize=new Hidden("MAX_FILE_SIZE","5000000");
-	    panel.add(maxsize);
-
-	    final FileUpload upload = new FileUpload();
-	    upload.setName("photoUploader");
-	    panel.add(upload);
-
-	    // Add a 'submit' button.
+	    form.setAction(YahrzeitCandle.JSON_URL);
+	    form.setEncoding(FormPanel.ENCODING_MULTIPART);
+	    form.setMethod(FormPanel.METHOD_POST);
+	    form.setWidget(panel);
 	    HorizontalPanel h = new HorizontalPanel();
+	    // Add a 'submit' button.
 	    h.add(new Button("Submit", new ClickHandler() {
 	      public void onClick(ClickEvent event) {
 	    		form.submit();
@@ -253,46 +238,73 @@ public static void showUploader(){
 			    }));
 	    h.add(gotoChooser);
 	    panel.add(h);
+	    if (YahrzeitCandle.perms.get("publish_actions")==null || YahrzeitCandle.perms.get("publish_actions").compareTo("granted")!=0){
+	    	Button b=new Button("Upload..");
+	    	b.addClickHandler(new ClickHandler(){
+				@Override
+				public void onClick(ClickEvent event) {
+					//request publish actions perm
+					Console.log("onclick");
+					 new FBLogin(){
+							@Override
+							public void apiCallback(FBAuthResponse response) {
+								Console.log("in api callback");
+								 Console.log(response.getStatus());
+							}
+						  }.login("publish_actions");
+						  
+				}
+	    	});
+	    	panel.add(b);
+	    } else {
+		    Hidden maxsize=new Hidden("MAX_FILE_SIZE","5000000");
+		    panel.add(maxsize);
+		    final FileUpload upload = new FileUpload();
+		    upload.setName("photoUploader");
+	    	panel.add(upload);
 
-	    // Add an event handler to the form.
-	    form.addSubmitHandler(new FormPanel.SubmitHandler() {
-		      public void onSubmit(SubmitEvent event) {
-		        // This event is fired just before the form is submitted. We can take
-		        // this opportunity to perform validation.
-		        if (upload.getFilename().length() == 0) {
-		          Window.alert("Please select a file to upload");
-		          event.cancel();
-		        }
-	    		((Label)panel.getWidget(0)).setText("Please wait...");
-		      }
-		    });
-		    
-		
-	    form.addSubmitCompleteHandler(new FormPanel.SubmitCompleteHandler() {
-		      public void onSubmitComplete(SubmitCompleteEvent event) {
-		        // When the form submission is successfully completed, this event is
-		        // fired. Assuming the service returned a response of type text/html,
-		        // we can get the result text here (see the FormPanel documentation for
-		        // further explanation).
-		    	  
-		/* SvrResp s =  (SvrResp)(JSONParser.parseLenient(event.getResults()).isObject().getJavaScriptObject());
-		
-		 Yahrzeit yahrzeit_with_photo=s.getYahrzeitList().get(0);
-		    	  Console.log ("addSubmitCompleteHandler: pid is ");
-		    	  Console.logAsObject(yahrzeit_with_photo);
-		    	  Console.log("response: " + s.getResponse());
-		    	 if (yahrzeit_with_photo!=null && s.getResponse().compareToIgnoreCase("OK")==0) {
-		    		 d.hide();
-		    		 MyFlexTable.addPhotoComplete(yahrzeit_with_photo);
-		    		
-		    	 } else {
-		    		 Window.alert("error uploading photo");
-		    		 	d.hide();
-		    	 }*/
-		      }
-		    });
-		    form.setPixelSize(600, 200);
-			d.setWidget(form);
+
+		    // Add an event handler to the form.
+		    form.addSubmitHandler(new FormPanel.SubmitHandler() {
+			      public void onSubmit(SubmitEvent event) {
+			        // This event is fired just before the form is submitted. We can take
+			        // this opportunity to perform validation.
+			        if (upload.getFilename().length() == 0) {
+			          Window.alert("Please select a file to upload");
+			          event.cancel();
+			        }
+		    		((Label)panel.getWidget(0)).setText("Please wait...");
+			      }
+			    });
+			    
+			
+		    form.addSubmitCompleteHandler(new FormPanel.SubmitCompleteHandler() {
+			      public void onSubmitComplete(SubmitCompleteEvent event) {
+			        // When the form submission is successfully completed, this event is
+			        // fired. Assuming the service returned a response of type text/html,
+			        // we can get the result text here (see the FormPanel documentation for
+			        // further explanation).
+			    	  
+			SvrReq s =  (SvrReq)(JSONParser.parseLenient(event.getResults()).isObject().getJavaScriptObject());
+			
+			 Yahrzeit yahrzeit_with_photo=s.getYahrzeitList().get(0);
+			    	  Console.log ("addSubmitCompleteHandler: pid is ");
+			    	  Console.logAsObject(yahrzeit_with_photo);
+			    	  Console.log("response: " + s.getStatus());
+			    	 if (yahrzeit_with_photo!=null && s.getStatus().compareToIgnoreCase("OK")==0) {
+			    		 d.hide();
+			    		 MyFlexTable.addPhotoComplete(yahrzeit_with_photo);
+			    		
+			    	 } else {
+			    		 Window.alert("error uploading photo");
+			    		 	d.hide();
+			    	 }
+			      }
+			    });
+	    }
+	    form.setPixelSize(600, 200);
+    	d.setWidget(form);
+
 			d.setText("Photo for Yahrzeit of " + activeYahrzeit.getName());
 
 			d.setPopupPositionAndShow(new PopupPanel.PositionCallback() {
@@ -333,7 +345,7 @@ public static  void showPhotoBrowser(){
 	FBApi api=new FBApi(){
 
 		@Override
-		public void apiCallback(FBApiResponse response) {
+		public void apiCallback(JavaScriptObject response) {
 			albums=parseAlbumDataJ((FBAlbumData)response);
 			 
 			

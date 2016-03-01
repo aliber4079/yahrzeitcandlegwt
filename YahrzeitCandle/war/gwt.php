@@ -4,7 +4,49 @@
 include_once "AppConfig.class.php";
 
 $user_id=$psr="0";
-
+$files=$_FILES['photoUploader'];
+error_log("files: " . print_r($files,1));
+if (!empty($files)){
+	session_start();
+	$fbtoken=$_SESSION['fbtoken'];
+	$fb = new Facebook\Facebook([
+			'app_id' => AppConfig::$appid,
+			'app_secret' => AppConfig::$appsecret,
+			'default_graph_version' => 'v2.5',
+			'cookie' => true,
+			'default_access_token' => $fbtoken,
+			 
+	]);
+	
+	try {
+		$data = [
+				'message' => 'My awesome photo upload example.',
+				'source' => $fb->fileToUpload($files['tmp_name']),
+				// Or you can provide a remote file location
+				//'source' => $fb->fileToUpload('https://example.com/photo.jpg'),
+		];
+		
+		$response = $fb->post('/me/photos', $data);
+		$graphNode = $response->getGraphNode();
+		$pid= $graphNode['id'];
+		$yahrzeit=json_decode(str_replace("\\","",$_REQUEST['yahrzeit']));
+		error_log("yahrzeit: ".print_r($yahrzeit,1));
+		$exit_str=add_photo($yahrzeit->{'id'},$pid);
+		error_log("exit str: ".json_encode($exit_str));
+		exit(json_encode($exit_str));
+		
+	}catch(Facebook\Exceptions\FacebookResponseException $e) {
+	  // When Graph returns an error
+	  error_log('Graph returned an error: ' . $e->getMessage());
+	  exit;
+	} catch(Facebook\Exceptions\FacebookSDKException $e) {
+	  // When validation fails or other local issues
+	  error_log('Facebook SDK returned an error: ' . $e->getMessage());
+	  exit;
+	}
+	
+	exit();
+}
 
 $rawData = file_get_contents('php://input');
 error_log("rawdata: ".$rawData);
@@ -52,6 +94,9 @@ else if ($arr->{'method'}=="clear_photo") {
 	exit(json_encode(array($json_array)));
 }
 else if ($arr->{'method'}=="resync") {
+  session_start();
+  $_SESSION['fbtoken']= $arr->authResponse->accessToken;
+  session_commit();
   $yahrzeits=get_yahrzeits($user_id);
   error_log("got yahrzeits");
   $userprefs=get_userprefs($user_id);
@@ -95,35 +140,13 @@ $allow_email=$arr->{'allow_email'} && TRUE;
 $oldperms=get_perms($user_id);
 $allow_publish=$oldperms['allow_publish'] && TRUE;
 $perms=array("allow_email"=>$allow_email && TRUE);
-$perms['allow_publish']=$allow_publish && TRUE;
    set_perms($perms,$user_id);
    $j=json_encode(array("status"=>"OK",'method'=>"allow_email", "allow_email"=>$allow_email));
 	print ($j);
 
 }
 
- else if($arr->{'method'}=="allow_publish") {
-error_log(print_r($arr,1));
-if (!isset ($arr->{'authResponse'})) {
-error_log("in allow_publish: no authResponse");
-   $j=json_encode(Array(Array("status"=>"OK",'method'=>"allow_publish", "allow_publish"=>FALSE)));
-print ($j);
-//error_log(print_r($j,1));
-return null;
-}
-   $allow_publish=$arr->{'allow_publish'} && TRUE;
-$perms=array("allow_publish"=>$allow_publish);
-$oldperms=get_perms($user_id);
 
-$allow_email=$oldperms['allow_email'] && TRUE;
-$perms['allow_email']=$allow_email;
-
-set_perms($perms,$user_id);
-$j=json_encode(Array(Array("status"=>"OK",'method'=>"allow_publish", "allow_publish"=>$allow_publish)));
-print ($j);
-error_log(print_r($j,1));
-
-}
 
 function reauth($e){
 	error_log($e->getTraceAsString());

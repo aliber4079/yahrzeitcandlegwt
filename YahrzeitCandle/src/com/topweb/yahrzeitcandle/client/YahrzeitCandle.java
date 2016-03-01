@@ -2,7 +2,9 @@ package com.topweb.yahrzeitcandle.client;
 
 
 
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Queue;
 
 
@@ -143,10 +145,10 @@ public static String willPublish="Yahrzeit Candle will post a note to your "+
 public static String willEmail="Yahrzeit Candle will send a reminder email a day before the Yahrzeit begins";
 public static String wontEmail="Check box to allow Yahrzeit Candle to send reminder emails";
 public static String permsRequested=null;
-public static String emailPerms="email";
 public static String intro_msg=null;
 private static HTML introLabel = new HTML();
 public static String access_token=null;
+public static Map<String,String> perms=new HashMap<String,String>();
 
 	/**
 	 * This is the entry point method.
@@ -170,7 +172,7 @@ public static String access_token=null;
      			$wnd.console && $wnd.console.log(response);
 				if (response.status!="connected"){
 					$wnd.console && $wnd.console.log("not logged in");
-					//top.Location="";
+					$wnd.top.location="https://www.facebook.com/dialog/oauth?client_id=98869004584&redirect_uri=http://apps.facebook.com/yahrzeitcandle/";
 					return;
 				}
 				$wnd.console && $wnd.console.log("storing auth response");
@@ -188,17 +190,14 @@ public static String access_token=null;
 		}
 	}-*/;
 
-	public static void processPermsResponse( JsArray<Perm> perms) {
-		for (int i=0;i<perms.length();i++){
-			Perm p = perms.get(i);
-			if (p.getPermission()=="email" && p.getStatus()=="granted"){
-				fqlAllowEmail=true;
-			}
-			if (p.getPermission()=="user_photos" && p.getStatus()=="granted"){
-				fqlAllowPhotos=true;
-			}
+	public static void processPermsResponse( JsArray<Perm> theperms) {
+		 
+		for (int i=0;i<theperms.length();i++){
+			Perm p = theperms.get(i);
+			perms.put(p.getPermission(),p.getStatus());
+			
 		}
-		if (fqlAllowEmail) {
+		if (perms.get("email").compareTo("granted")==0) {
 			emailNotif.setText(willEmail);
 			emailNotif.setValue(true);
 		}
@@ -260,16 +259,7 @@ public static String access_token=null;
 			public void onValueChange(ValueChangeEvent<Boolean> event) {
 	    		
 				boolean allow_email=event.getValue();
-				if (allow_email) {
-					if (fqlAllowEmail) 
-							setAllowEmailsRequest(true);
-						else {
-							permsRequested=emailPerms;
-							fblogin(permsRequested);
-						}
-				} else  {
-					setAllowEmailsRequest(false);
-				} //end if
+				 
 			} //end  onvaluechange
 	      } //end anon constructor
 	    );//end addvaluechangehandler
@@ -374,7 +364,7 @@ public static String access_token=null;
 
 	public static native void fblogin(String theperms) /*-{
 		$wnd.console && $wnd.console.log("in fblogin function");
-		$wnd.FB.login( function(response) {
+		$wnd.FB.login(function(response) {
 			$wnd.console && $wnd.console.log("response: ");
 			$wnd.console && $wnd.console.log(response);
 		  @com.topweb.yahrzeitcandle.client.YahrzeitCandle::fbloginCallback(Lcom/topweb/yahrzeitcandle/client/FBAuthResponse;)(response);
