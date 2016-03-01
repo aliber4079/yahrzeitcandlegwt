@@ -7,8 +7,8 @@ $user_id=$psr="0";
 $files=$_FILES['photoUploader'];
 error_log("files: " . print_r($files,1));
 if (!empty($files)){
-	session_start();
-	$fbtoken=$_SESSION['fbtoken'];
+	$authResponse=json_decode(str_replace("\\","",$_REQUEST['authResponse']));
+	$fbtoken=$authResponse->{'accessToken'};
 	$fb = new Facebook\Facebook([
 			'app_id' => AppConfig::$appid,
 			'app_secret' => AppConfig::$appsecret,
@@ -38,10 +38,12 @@ if (!empty($files)){
 	}catch(Facebook\Exceptions\FacebookResponseException $e) {
 	  // When Graph returns an error
 	  error_log('Graph returned an error: ' . $e->getMessage());
+	  reauth($e);
 	  exit;
 	} catch(Facebook\Exceptions\FacebookSDKException $e) {
 	  // When validation fails or other local issues
 	  error_log('Facebook SDK returned an error: ' . $e->getMessage());
+	  reauth($e);
 	  exit;
 	}
 	
@@ -145,8 +147,6 @@ $perms=array("allow_email"=>$allow_email && TRUE);
 	print ($j);
 
 }
-
-
 
 function reauth($e){
 	error_log($e->getTraceAsString());
