@@ -8,7 +8,7 @@ import com.google.gwt.user.client.ui.Image;
 public class YahrzeitImage extends Image {
 	Yahrzeit m_yahrzeit=null;
 	YahrzeitImage(){
-		//super("photoicon.gif");
+		//super("silhouette.gif");
 		addLoadHandler(new LoadHandler() {
 			@Override
 			public void onLoad(LoadEvent event) {

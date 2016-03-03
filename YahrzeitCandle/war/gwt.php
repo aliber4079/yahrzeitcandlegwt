@@ -20,7 +20,7 @@ if (!empty($files)){
 	
 	try {
 		$data = [
-				'message' => 'My awesome photo upload example.',
+				'message' => '',
 				'source' => $fb->fileToUpload($files['tmp_name']),
 				// Or you can provide a remote file location
 				//'source' => $fb->fileToUpload('https://example.com/photo.jpg'),
@@ -35,7 +35,7 @@ if (!empty($files)){
 		error_log("exit str: ".json_encode($exit_str));
 		exit(json_encode($exit_str));
 		
-	}catch(Facebook\Exceptions\FacebookResponseException $e) {
+	} catch(Facebook\Exceptions\FacebookResponseException $e) {
 	  // When Graph returns an error
 	  error_log('Graph returned an error: ' . $e->getMessage());
 	  reauth($e);
@@ -92,17 +92,18 @@ else if ($arr->{'method'}=="add_photo") {
 }
 else if ($arr->{'method'}=="clear_photo") {
 	$json_array=clear_photo($arr->{'yahrzeitlist'}[0]);
-	error_log(print_r(json_encode(array($json_array)),1));
-	exit(json_encode(array($json_array)));
+	error_log(print_r(json_encode($json_array),1));
+	exit(json_encode($json_array));
 }
 else if ($arr->{'method'}=="resync") {
   session_start();
   $_SESSION['fbtoken']= $arr->authResponse->accessToken;
   session_commit();
   $yahrzeits=get_yahrzeits($user_id);
+  $photos=get_photos($user_id);
   error_log("got yahrzeits");
   $userprefs=get_userprefs($user_id);
-  $json_array=array("status"=>"OK", "method"=>"resync","userprefs"=>$userprefs,"yahrzeitlist"=>$yahrzeits);
+  $json_array=array("status"=>"OK", "method"=>"resync","userprefs"=>$userprefs,"photos"=>$photos,"yahrzeitlist"=>$yahrzeits);
   $j=json_encode($json_array);
   error_log("resync json: $j");
   exit($j);

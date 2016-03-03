@@ -2,9 +2,14 @@ package com.topweb.yahrzeitcandle.client;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
+import java.util.Set;
+
 
 import net.sf.hebcal.HebrewDate;
 import net.sf.hebcal.HebrewDateException;
@@ -28,6 +33,8 @@ import com.google.gwt.event.dom.client.MouseOverEvent;
 import com.google.gwt.event.dom.client.MouseOverHandler;
 import com.google.gwt.event.logical.shared.CloseEvent;
 import com.google.gwt.event.logical.shared.CloseHandler;
+import com.google.gwt.event.shared.EventHandler;
+import com.google.gwt.event.shared.GwtEvent;
 import com.google.gwt.event.shared.UmbrellaException;
 import com.google.gwt.http.client.Request;
 import com.google.gwt.http.client.RequestBuilder;
@@ -41,6 +48,7 @@ import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.AbsolutePanel;
 import com.google.gwt.user.client.ui.Anchor;
 import com.google.gwt.user.client.ui.Button;
+import com.google.gwt.user.client.ui.DecoratedPopupPanel;
 import com.google.gwt.user.client.ui.DialogBox;
 import com.google.gwt.user.client.ui.FlexTable;
 import com.google.gwt.user.client.ui.FlowPanel;
@@ -50,7 +58,9 @@ import com.google.gwt.user.client.ui.Image;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.Panel;
 import com.google.gwt.user.client.ui.PopupPanel;
+import com.google.gwt.user.client.ui.SimplePanel;
 import com.google.gwt.user.client.ui.Widget;
+ 
 import com.google.gwt.user.client.ui.UIObject;
 import com.google.gwt.user.client.ui.VerticalPanel;
 //import com.google.gwt.user.client.ui.Hidden;
@@ -66,7 +76,8 @@ public class MyFlexTable {
     public static FlowPanel changeClearButtons = new FlowPanel();
     public static Button clearImageButton = new Button("clear");
     public static Button changeImageButton = new Button("change");
-	static FlexTable flexTable=null;
+	public static FlexTable flexTable=null;
+	//static Map<String,String>photos_to_url_map=new HashMap<String,String>();
 	MyFlexTable() {
 		flexTable=new FlexTable();
 	    flexTable.setText(0, 0, "Honoree");
@@ -139,16 +150,15 @@ public class MyFlexTable {
 		$wnd.FB.Canvas.setSize();
 		
 	}-*/;
-	  protected void addRowsConfirmed(JsArray<Yahrzeit> yahrzeitlist) {
-		 //System.out.println("yahrzeitlist.length(): " + yahrzeitlist.length());
-			//YahrzeitCandle.addYahrButton.setEnabled(true);
+	  protected void addRowsConfirmed(JsArray<Yahrzeit> yahrzeitlist) { //can be called on resync
+		 
 
 		  if (yahrzeitlist.length()==0)return;
 		 List<YahrzeitContainer> incomingList= new ArrayList<YahrzeitContainer>();
-
 		 //transfer list from jsarray to arraylist for sorting
 		for (int i=0;i<yahrzeitlist.length();i++){
 					Yahrzeit h = yahrzeitlist.get(i);
+					
 					YahrzeitContainer yc = new YahrzeitContainer(h);
 					m_YahrzeitContainerList.add(yc);
 					           incomingList.add(yc);
@@ -161,9 +171,26 @@ public class MyFlexTable {
 				ListIterator<YahrzeitContainer> incoming_iter=incomingList.listIterator();
 				ListIterator<YahrzeitContainer> main_iter=m_YahrzeitContainerList.listIterator();
 
-				//YahrzeitContainer incoming = incomingList.get(incoming_iter.nextIndex());
+				 Set<String>has_photos=new HashSet<String>(0);
+				 String photoslist=new String();
+
 				while (incoming_iter.hasNext() ) {
 					YahrzeitContainer incoming = incoming_iter.next();
+
+					//photos section
+					if (incoming.getYahrzeit().getPhoto()!=null){
+						if (has_photos.size()==0){
+							photoslist=incoming.getYahrzeit().getPhoto();
+							has_photos.add(incoming.getYahrzeit().getPhoto());
+						} else {
+							if (!has_photos.contains(incoming.getYahrzeit().getPhoto())){
+								photoslist+=("," + incoming.getYahrzeit().getPhoto());
+								has_photos.add(incoming.getYahrzeit().getPhoto());
+							}
+						}
+					}//end photos section				
+					
+					
 				 while  (main_iter.hasNext()){
 						YahrzeitContainer master = main_iter.next();
 int idb=incoming.getYahrzeit().getDbId();
@@ -195,9 +222,9 @@ int mdb=master.getYahrzeit().getDbId();
 				        final AbsolutePanel placeholderImagePanel = new AbsolutePanel();
 				     
 					    FocusPanel fPanel = new FocusPanel();					
-				    	YahrzeitImage placeholderImage=new YahrzeitImage(incoming.getYahrzeit());
+				    	final YahrzeitImage placeholderImage=new YahrzeitImage(incoming.getYahrzeit());
 				    						    
-				    	Console.log("setting photo to " + incoming.getYahrzeit().getPhoto());
+				    	Console.log("setting photo to " + incoming.getYahrzeit().getPhoto());//existing photos
 				    	fPanel.addMouseOverHandler(new MouseOverHandler() {
 							@Override
 							public void onMouseOver(MouseOverEvent event) {
@@ -215,6 +242,7 @@ int mdb=master.getYahrzeit().getDbId();
 				    	placeholderImagePanel.add(placeholderImage);
 					    fPanel.add(placeholderImagePanel);
 					    flexTable.setWidget(row, 3, fPanel );
+					    
 
 				    	
 				    } else {
@@ -262,10 +290,67 @@ int mdb=master.getYahrzeit().getDbId();
 			
 					}
 				}
+
+				//photos section
+				Console.log(photoslist);
+				if (has_photos.size()>0){
+					Console.log("ids: " + photoslist);
+					String graphquery="/me?ids=" + photoslist + "&fields=id,picture.type(normal)";
+					Console.log("graphquery: " + graphquery);
+					
+					new FBApi() {
+						 
+						@Override
+						public void apiCallback(JavaScriptObject response){
+							Console.logAsObject(response);
+							JsArray<PhotoNative> photos_to_url = (new Object(){
+								public native JsArray<PhotoNative> getPhotos(JavaScriptObject response) /*-{
+									photos=[]
+									for (i in response){
+										photos.push({id:response[i].id,picture:response[i].picture});
+									}
+									$wnd.console && $wnd.console.log(photos);
+									return photos;
+								}-*/;
+							}.getPhotos(response));
+							 
+							for (YahrzeitContainer y : m_YahrzeitContainerList){
+								Console.log(y.getYahrzeit().getPhoto());
+								String curPhotoId=y.getYahrzeit().getPhoto();
+								for (int i=0;i<photos_to_url.length();i++){
+									if(photos_to_url.get(i).getId().equalsIgnoreCase(curPhotoId)){
+										int row1= getYahrzeitIndexFromDatabaseId(y.getYahrzeit().getDbId()) + 1;
+										Console.log("position for " + curPhotoId + "  is "+ row1);
+										 SimplePanel w = (SimplePanel) flexTable.getWidget(row1, 3);
+											YahrzeitImage curImage=
+											(YahrzeitImage)
+											((AbsolutePanel)((Widget)w.getWidget())).getWidget(0);
+										 if (curImage.getYahrzeit().getPhoto().equalsIgnoreCase(curPhotoId)){
+											 curImage.setUrl(photos_to_url.get(i).getUrl());
+										 }
+									}
+								}
+							}
+							//ListIterator<YahrzeitContainer>  incoming_iter1=
+							//incoming_iter1.next();
+							/*while (incoming_iter1.hasNext() ) {
+								//photos section
+								YahrzeitContainer incoming = incoming_iter1.next();
+								String pid=incoming.getYahrzeit().getPhoto();
+								if (pid!=null) {
+									String url=photos_to_url_map.get(pid);
+									if(url!=null){
+										Console.log("will map " + pid + " to " + url);
+									}
+								}
+							}*/
+						}
+					}.get(graphquery);
+				}//end photos section
 	
 	  				resizeFbIframe();
 	  				setStatCount(m_YahrzeitContainerList.size());
-				 }
+		}
 
 		
 			
@@ -431,7 +516,7 @@ int mdb=master.getYahrzeit().getDbId();
 						}
 						setAllMyButtonsEnabled(true);
 						YahrzeitCandle.addYahrButton.setEnabled(true);
-				 } else if (req.getMethod().equalsIgnoreCase("add_photo")){
+				 } else if (req.getMethod().equalsIgnoreCase("add_photo")){ //gets called when choosing from fbalbums
 						PhotoBrowser.d.hide();
 
 					    final AbsolutePanel placeholderImagePanel = new AbsolutePanel();
@@ -443,10 +528,10 @@ int mdb=master.getYahrzeit().getDbId();
 						Yahrzeit h = req.getYahrzeitList().get(0);
 						Console.log("id is " + h.getDbId() + ", photo is " + h.getPhoto());
 						if (h==null || h.getPhoto()==null) return;
-						int position= getYahrzeitIndexFromDatabaseId(h.getDbId()) + 1;
-						Console.log("position is "+ position);
-						flexTable.getWidget(position, 3).removeFromParent();
-						YahrzeitImage placeholderImage=new YahrzeitImage(h);
+						int row= getYahrzeitIndexFromDatabaseId(h.getDbId()) + 1;
+						Console.log("position is "+ row);
+						flexTable.getWidget(row, 3).removeFromParent();
+						final YahrzeitImage placeholderImage=new YahrzeitImage(h);
 					    
 				    	Console.log("setting photo to " + h.getPhoto());
 				       
@@ -467,8 +552,84 @@ int mdb=master.getYahrzeit().getDbId();
 				    	 			    	
 						placeholderImagePanel.add(placeholderImage);
 					    fPanel.add(placeholderImagePanel);
-					    flexTable.setWidget(position, 3, fPanel );
-						
+					    flexTable.setWidget(row, 3, fPanel );
+				    	for (YahrzeitContainer y : m_YahrzeitContainerList){ //update master list
+							if (y.getYahrzeit().getDbId()==h.getDbId()){
+								y.getYahrzeit().setPhoto(h.getPhoto());
+							}
+				    	}
+					    
+					    
+					    String graphquery="/me?ids=" + h.getPhoto() + "&fields=id,picture.type(normal)";
+					    Console.log("graphquery: " + graphquery);
+					    new FBApi() {
+							@Override
+							public void apiCallback(JavaScriptObject response){
+								Console.logAsObject(response);
+								JsArray<PhotoNative> photos_to_url = (new Object(){
+									public native JsArray<PhotoNative> getPhotos(JavaScriptObject response) /*-{
+										photos=[]
+										for (i in response){
+											photos.push({id:response[i].id,picture:response[i].picture});
+										}
+										$wnd.console && $wnd.console.log(photos);
+										return photos;
+									}-*/;
+								}.getPhotos(response));
+								for (YahrzeitContainer y : m_YahrzeitContainerList){
+									String curPhotoId=y.getYahrzeit().getPhoto();
+									for (int i=0;i<photos_to_url.length();i++){
+										if(photos_to_url.get(i).getId().equalsIgnoreCase(curPhotoId)){
+											int row1= getYahrzeitIndexFromDatabaseId(y.getYahrzeit().getDbId()) + 1;
+											Console.log("position for " + curPhotoId + "  is "+ row1);
+											 SimplePanel w = (SimplePanel) flexTable.getWidget(row1, 3);
+												YahrzeitImage curImage=
+												(YahrzeitImage)
+												((AbsolutePanel)((Widget)w.getWidget())).getWidget(0);
+											 if (curImage.getYahrzeit().getPhoto().compareTo(curPhotoId)==0){
+												 curImage.setUrl(photos_to_url.get(i).getUrl());
+											 }
+										}
+									}
+								}
+							}
+						}.get(graphquery);						
+					} else if (req.getMethod().equalsIgnoreCase("clear_photo")) {
+						Yahrzeit h = req.getYahrzeitList().get(0);
+						int row= getYahrzeitIndexFromDatabaseId(h.getDbId()) + 1;
+						Console.log("position is "+ row);
+						FocusPanel p = (FocusPanel)flexTable.getWidget(row,3);
+				    	for (YahrzeitContainer y : m_YahrzeitContainerList){ //update master list
+							if (y.getYahrzeit().getDbId()==h.getDbId()){
+								y.getYahrzeit().setPhoto(null);
+							}
+				    	}
+
+						p.removeFromParent();
+						YAddPhotoButton setPhotoButton = new YAddPhotoButton(h);
+				    	setPhotoButton.addClickHandler(new ClickHandler(){
+							@Override
+							public void onClick(ClickEvent event) {
+								PhotoBrowser.activeYahrzeit=((YAddPhotoButton)event.getSource()).getYahrzeit();
+								Console.log("active Yahrzeit: " + PhotoBrowser.activeYahrzeit.getName());
+								  if (YahrzeitCandle.perms.get("user_photos")==null || YahrzeitCandle.perms.get("user_photos").compareTo("granted")!=0) {
+									  new FBLogin(){
+
+										@Override
+										public void apiCallback(FBAuthResponse response) {
+											 Console.log(response.getStatus());
+											
+										}
+										  
+									  }.login("user_photos");
+								}else {
+									
+									PhotoBrowser.showUploader();
+
+								}
+							}
+				    	});
+					    flexTable.setWidget(row, 3, setPhotoButton );
 					}
 				}//status OK
 			else if (req.getStatus().compareToIgnoreCase("error")==0){
@@ -786,11 +947,13 @@ deleteDialog.setText("delete selected yahrzeit?");
 		SvrReq svr=(SvrReq)JavaScriptObject.createObject();
 		svr.setMethod("clear_photo");
 		//svr.setFbAuthResponse(YahrzeitCandle.fbAuthResponse);
-		svr.setPhoto(String.valueOf(fbPhoto.getYahrzeit().getDbId()));
+		Yahrzeit h[] = {fbPhoto.getYahrzeit()};
+		svr.setYahrzeits(JsArrayUtils.readOnlyJsArray(h));
+		//setPhoto(String.valueOf(fbPhoto.getYahrzeit().getDbId()));
 		 
 		YahrzeitCandle.yahrFlexTable.submitData(svr);	
 	}
-	public static void addPhotoComplete(Yahrzeit yahrzeit_with_photo) {
+	public static void addPhotoComplete(Yahrzeit yahrzeit_with_photo) { // when uploading photo, not using chooser
 		final AbsolutePanel placeholderImagePanel = new AbsolutePanel();
 	    FocusPanel fPanel = new FocusPanel();					
 
@@ -801,10 +964,14 @@ deleteDialog.setText("delete selected yahrzeit?");
 		int position= getYahrzeitIndexFromDatabaseId(yahrzeit_with_photo.getDbId()) + 1;
 		Console.log("position is "+ position);
 		flexTable.getWidget(position, 3).removeFromParent();
-		YahrzeitImage placeholderImage=new YahrzeitImage(yahrzeit_with_photo);
+		final YahrzeitImage placeholderImage=new YahrzeitImage(yahrzeit_with_photo);
 	    
     	Console.log("setting photo to " + yahrzeit_with_photo.getPhoto());
-       
+    	for (YahrzeitContainer y : m_YahrzeitContainerList){
+			if (y.getYahrzeit().getDbId()==yahrzeit_with_photo.getDbId()){
+				y.getYahrzeit().setPhoto(yahrzeit_with_photo.getPhoto());
+			}
+    	}
     	fPanel.addMouseOverHandler(new MouseOverHandler() {
 			@Override
 			public void onMouseOver(MouseOverEvent event) {
@@ -823,6 +990,47 @@ deleteDialog.setText("delete selected yahrzeit?");
 		placeholderImagePanel.add(placeholderImage);
 	    fPanel.add(placeholderImagePanel);
 	    flexTable.setWidget(position, 3, fPanel );
+	    
+	    
+	    String graphquery="/me?ids=" + yahrzeit_with_photo.getPhoto() + "&fields=id,picture.type(normal)";
+		Console.log("graphquery: " + graphquery);
+		
+		new FBApi() {
+			 
+			@Override
+			public void apiCallback(JavaScriptObject response){
+				Console.logAsObject(response);
+				JsArray<PhotoNative> photos_to_url = (new Object(){
+					public native JsArray<PhotoNative> getPhotos(JavaScriptObject response) /*-{
+						photos=[]
+						for (i in response){
+							photos.push({id:response[i].id,picture:response[i].picture});
+						}
+						$wnd.console && $wnd.console.log(photos);
+						return photos;
+					}-*/;
+				}.getPhotos(response));
+				Console.log("length: " + m_YahrzeitContainerList.size());
+				for (YahrzeitContainer y : m_YahrzeitContainerList){
+					Console.log(y.getYahrzeit().getPhoto());
+					String curPhotoId=y.getYahrzeit().getPhoto();
+					for (int i=0;i<photos_to_url.length();i++){
+						if(photos_to_url.get(i).getId().equalsIgnoreCase(curPhotoId)){
+							int row1= getYahrzeitIndexFromDatabaseId(y.getYahrzeit().getDbId()) + 1;
+							Console.log("position for " + curPhotoId + "  is "+ row1);
+							 SimplePanel w = (SimplePanel) flexTable.getWidget(row1, 3);
+								YahrzeitImage curImage=
+								(YahrzeitImage)
+								((AbsolutePanel)((Widget)w.getWidget())).getWidget(0);
+							 if (curImage.getYahrzeit().getPhoto().equalsIgnoreCase(curPhotoId)){
+								 curImage.setUrl(photos_to_url.get(i).getUrl());
+							 }
+						}
+					}
+				}
+				 
+			}
+		}.get(graphquery);
 		
 	}
 	

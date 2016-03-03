@@ -318,14 +318,14 @@ public static void showUploader(){
 	 
 public  native static int fbGetOffsetTop(int offsetHeight) /*-{
 	$wnd.console && $wnd.console.log("in fbGetOffsetTop " + offsetHeight);
-	$wnd.FB.Canvas.getPageInfo(function(ci){
-	 newtop = parseInt(ci.scrollTop) - parseInt(ci.offsetTop);
-	 newtop = (newtop + offsetHeight / 3);
-	//$wnd.console && $wnd.console.log("fb offset top: " + newtop);
-	@com.topweb.yahrzeitcandle.client.PhotoBrowser::finishResizing(I)(newtop);
-	});
-	
-	
+	$wnd.console && $wnd.console.log ("!top parent: " );
+	$wnd.console && $wnd.console.log (top!==top.parent);
+		$wnd.FB.Canvas.getPageInfo(function(ci){
+		 newtop = parseInt(ci.scrollTop) - parseInt(ci.offsetTop);
+		 newtop = (newtop + offsetHeight / 3);
+		//$wnd.console && $wnd.console.log("fb offset top: " + newtop);
+			@com.topweb.yahrzeitcandle.client.PhotoBrowser::finishResizing(I)(newtop);
+	 	});
 }-*/;
 
 public static void finishResizing(int newtop){
@@ -380,7 +380,7 @@ public static  void showPhotoBrowser(){
 		
 	};
 	api.get("/me?fields=albums.fields(id,name,photos.fields(id,picture.type(small)))");
-
+//query individual photos: ?ids=10151014340356421,10150819829371421&fields=id,picture.type(normal)
   }
 }
 

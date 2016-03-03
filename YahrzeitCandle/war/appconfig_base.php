@@ -249,6 +249,20 @@ if (!$res) {
     return mysqli_fetch_assoc($res);
 	 
 }
+
+function get_photos ($uid){
+	$conn = get_db_conn();
+	$sql="select GROUP_CONCAT(distinct photo) as photos from yahrzeit where uid=$uid";
+	$res = mysqli_query($conn,$sql);
+	if (!$res) {
+		error_log($conn->error);
+		return 0;
+	}
+	$photos=mysqli_fetch_assoc($res)['photos'];
+	return $photos;
+	
+}
+
 function validate_session ($sess) {
 foreach ($sess as $key => $value) {
             $session[$key] = $value;
@@ -306,10 +320,8 @@ error_log(print_r($yahrzeit,1));
     $sql = "update yahrzeit set photo=NULL  where id=".$yahrzeit->{'id'};
     error_log($sql);
     $res = mysqli_query($conn,$sql);
-$y_temp=array('id'=>$yahrzeit->{'id'},'honoree'=>$yahrzeit->{'honoree'});
-    //return (Array("method"=>"clear_photo","response"=>"OK","yahrzeitlist"=>array($yahrzeit)));
+	$y_temp=array('id'=>$yahrzeit->{'id'},'honoree'=>$yahrzeit->{'honoree'});
     return (Array("method"=>"clear_photo","status"=>"OK","yahrzeitlist"=>array($y_temp)));
-
 }
 
 
