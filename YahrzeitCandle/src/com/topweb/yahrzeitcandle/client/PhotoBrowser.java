@@ -69,12 +69,8 @@ import com.google.gwt.json.client.JSONParser;
 
   public class PhotoBrowser  {
 	    private final static SingleSelectionModel<FBPhoto> selectionModel = new SingleSelectionModel<FBPhoto>();
-
-	  
-
 		
-	static List<FBAlbum> albums=null;
-	  
+	static List<FBAlbum> albums=null;	  
     static Button m_confirmbutton=new Button("Select");
     static Button m_uploadbutton=new Button ("Upload...");
     static Yahrzeit activeYahrzeit=null;
@@ -272,6 +268,7 @@ public static void showUploader(){
 			        if (upload.getFilename().length() == 0) {
 			          Window.alert("Please select a file to upload");
 			          event.cancel();
+			          return;
 			        }
 		    		((Label)panel.getWidget(0)).setText("Please wait...");
 			      }
@@ -347,16 +344,7 @@ public static  void showPhotoBrowser(){
 		@Override
 		public void apiCallback(JavaScriptObject response) {
 			albums=parseAlbumDataJ((FBAlbumData)response);
-			 
 			
-			/*for (int i=0;i<la.size();i++){
-		    	Console.log(la.get(i).getName());
-		    	for (int j=0;j<la.get(i).getPhotos().size();j++){
-		    		Console.log(la.get(i).getPhotos().get(j).getId());
-		    	}
-		    }
-			
-			if (true) return;*/
 			TreeViewModel model = new CustomTreeModel();
 			CellBrowser.Builder<TreeViewModel> b 
 			 =new CellBrowser.Builder<TreeViewModel>(model,null);

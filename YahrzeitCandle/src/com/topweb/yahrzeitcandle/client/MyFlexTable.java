@@ -35,6 +35,10 @@ import com.google.gwt.event.logical.shared.CloseEvent;
 import com.google.gwt.event.logical.shared.CloseHandler;
 import com.google.gwt.event.shared.EventHandler;
 import com.google.gwt.event.shared.GwtEvent;
+import com.google.gwt.event.shared.GwtEvent.Type;
+import com.google.gwt.event.shared.HandlerManager;
+import com.google.gwt.event.shared.HandlerRegistration;
+import com.google.gwt.event.shared.HasHandlers;
 import com.google.gwt.event.shared.UmbrellaException;
 import com.google.gwt.http.client.Request;
 import com.google.gwt.http.client.RequestBuilder;
@@ -67,7 +71,7 @@ import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.TextBox;
 
-public class MyFlexTable {
+public class MyFlexTable implements HasHandlers{
 
 	public FlexTable getTable() {return flexTable;}
 	private final DialogBox deleteDialog=new DialogBox();
@@ -78,7 +82,22 @@ public class MyFlexTable {
     public static Button changeImageButton = new Button("change");
 	public static FlexTable flexTable=null;
 	//static Map<String,String>photos_to_url_map=new HashMap<String,String>();
+	 private HandlerManager handlerManager;
+
+
+	public HandlerRegistration addImageAddedHandler(ImageAddedHandler handler){
+		 return handlerManager.addHandler( ImageAddedHandler.TYPE, handler);
+	}
+	@Override
+	public void fireEvent(GwtEvent<?> event) {
+		//handlerManager.getHandler(event., index).fireEvent(event);
+		handlerManager.fireEvent(event);
+	}
+
+	
 	MyFlexTable() {
+		handlerManager = new HandlerManager(this);
+
 		flexTable=new FlexTable();
 	    flexTable.setText(0, 0, "Honoree");
 	    flexTable.setText(0, 1, "Hebrew date");
@@ -113,11 +132,10 @@ public class MyFlexTable {
 					((AbsolutePanel)((Widget)event.getSource()).getParent().getParent()).getWidget(0);
 				PhotoBrowser.activeYahrzeit=curImage.getYahrzeit();
 				Console.log("active Yahrzeit: " + PhotoBrowser.activeYahrzeit.getName());
-				
 				PhotoBrowser.showUploader();
 				
 			}
-	    });	
+	    });
 	    flexTable.setCellPadding(6);
 	      flexTable.getRowFormatter().addStyleName(0, "watchListHeader");
 	      flexTable.addStyleName("watchList");
@@ -200,11 +218,6 @@ int mdb=master.getYahrzeit().getDbId();
 					
 					int index = main_iter.previousIndex();
 					int row = index + 1; //to account for header row
-				//	System.out.println ("row: " + row);
-					
-				//	System.out.println("rowcount: "+ flexTable.getRowCount());
-					
-					
 					if (row < flexTable.getRowCount()) { 
 						flexTable.insertRow(row); 
 					}
@@ -262,20 +275,13 @@ int mdb=master.getYahrzeit().getDbId();
 										}
 										  
 									  }.login("user_photos");
-									//YahrzeitCandle.fblogin("user_photos");
 								}else {
-									
 									PhotoBrowser.showUploader();
-
 								}
 							}
 				    	});
 					    flexTable.setWidget(row, 3, setPhotoButton );
-
 				    }
-				    
-				    
-				    
 				    flexTable.getCellFormatter().addStyleName(row, 1, "watchListNumericColumn");
 				    flexTable.getCellFormatter().addStyleName(row, 2, "watchListNumericColumn");
 				    flexTable.getCellFormatter().addStyleName(row, 3, "photoColumn");
@@ -313,37 +319,7 @@ int mdb=master.getYahrzeit().getDbId();
 									return photos;
 								}-*/;
 							}.getPhotos(response));
-							 
-							for (YahrzeitContainer y : m_YahrzeitContainerList){
-								Console.log(y.getYahrzeit().getPhoto());
-								String curPhotoId=y.getYahrzeit().getPhoto();
-								for (int i=0;i<photos_to_url.length();i++){
-									if(photos_to_url.get(i).getId().equalsIgnoreCase(curPhotoId)){
-										int row1= getYahrzeitIndexFromDatabaseId(y.getYahrzeit().getDbId()) + 1;
-										Console.log("position for " + curPhotoId + "  is "+ row1);
-										 SimplePanel w = (SimplePanel) flexTable.getWidget(row1, 3);
-											YahrzeitImage curImage=
-											(YahrzeitImage)
-											((AbsolutePanel)((Widget)w.getWidget())).getWidget(0);
-										 if (curImage.getYahrzeit().getPhoto().equalsIgnoreCase(curPhotoId)){
-											 curImage.setUrl(photos_to_url.get(i).getUrl());
-										 }
-									}
-								}
-							}
-							//ListIterator<YahrzeitContainer>  incoming_iter1=
-							//incoming_iter1.next();
-							/*while (incoming_iter1.hasNext() ) {
-								//photos section
-								YahrzeitContainer incoming = incoming_iter1.next();
-								String pid=incoming.getYahrzeit().getPhoto();
-								if (pid!=null) {
-									String url=photos_to_url_map.get(pid);
-									if(url!=null){
-										Console.log("will map " + pid + " to " + url);
-									}
-								}
-							}*/
+							YahrzeitCandle.yahrFlexTable.fireEvent(new ImageAddedEvent(photos_to_url));
 						}
 					}.get(graphquery);
 				}//end photos section
@@ -433,7 +409,6 @@ int mdb=master.getYahrzeit().getDbId();
 		private static int getYahrzeitIndexFromDatabaseId(int dbid) {
 			// 
 
-			//System.out.println("m_YahrzeitContainerList size: " +  m_YahrzeitContainerList.size());
 			ListIterator<YahrzeitContainer> i=m_YahrzeitContainerList.listIterator();
 			 while (i.hasNext() ){
  				YahrzeitContainer h = i.next();
@@ -531,7 +506,7 @@ int mdb=master.getYahrzeit().getDbId();
 						int row= getYahrzeitIndexFromDatabaseId(h.getDbId()) + 1;
 						Console.log("position is "+ row);
 						flexTable.getWidget(row, 3).removeFromParent();
-						final YahrzeitImage placeholderImage=new YahrzeitImage(h);
+						YahrzeitImage placeholderImage=new YahrzeitImage(h);
 					    
 				    	Console.log("setting photo to " + h.getPhoto());
 				       
@@ -576,22 +551,7 @@ int mdb=master.getYahrzeit().getDbId();
 										return photos;
 									}-*/;
 								}.getPhotos(response));
-								for (YahrzeitContainer y : m_YahrzeitContainerList){
-									String curPhotoId=y.getYahrzeit().getPhoto();
-									for (int i=0;i<photos_to_url.length();i++){
-										if(photos_to_url.get(i).getId().equalsIgnoreCase(curPhotoId)){
-											int row1= getYahrzeitIndexFromDatabaseId(y.getYahrzeit().getDbId()) + 1;
-											Console.log("position for " + curPhotoId + "  is "+ row1);
-											 SimplePanel w = (SimplePanel) flexTable.getWidget(row1, 3);
-												YahrzeitImage curImage=
-												(YahrzeitImage)
-												((AbsolutePanel)((Widget)w.getWidget())).getWidget(0);
-											 if (curImage.getYahrzeit().getPhoto().compareTo(curPhotoId)==0){
-												 curImage.setUrl(photos_to_url.get(i).getUrl());
-											 }
-										}
-									}
-								}
+								YahrzeitCandle.yahrFlexTable.fireEvent(new ImageAddedEvent(photos_to_url));
 							}
 						}.get(graphquery);						
 					} else if (req.getMethod().equalsIgnoreCase("clear_photo")) {
@@ -650,7 +610,6 @@ int mdb=master.getYahrzeit().getDbId();
 	  
 	  
 	  public void setStatCount(int count) {
-		
 		YahrzeitCandle.ycstats.setText(count>0 ?
 				count+ " Yahrzeit" + (count>1 ? "s" :"")+" in list" 
 		:
@@ -681,17 +640,11 @@ int mdb=master.getYahrzeit().getDbId();
 			int new_position=getYahrzeitIndexFromDatabaseId(h.getDbId());
 			System.out.println("initial position: " + initial_position);
 			System.out.println("new position: " + new_position);
-		/*	System.out.println("initial hebday: " + yc.getYahrzeit().getHebDay());
-			System.out.println("filling in gregdate with " + h.getHebMonth() + " " + h.getHebDay());
-			HebrewDate gregDisplay = YahrzeitCandle.calc_greg_date_todisplay(h.getHebMonth(),h.getHebDay());		
-			System.out.println("gregdisplay format: " + gregDisplay.formatGregorianDate_English());
-		*/	
 			
 			int initial_row=initial_position+1;
 			int new_row = new_position+1;
 			
 			if (initial_position==new_position){
-			//	System.out.println("modify: initial_position==new_position");
 				
 				flexTable.setText( initial_row,0 ,h.getName());
 				 flexTable.setText(initial_row, 1, h.getHebDay()+ " " + YahrzeitCandle.heb_months[h.getHebMonth()]);
@@ -720,13 +673,9 @@ int mdb=master.getYahrzeit().getDbId();
 					      flexTable.getCellFormatter().addStyleName(new_row, 3, "photoColumn");
 					      flexTable.getCellFormatter().addStyleName(new_row, 4, "editColumn");
 					      flexTable.getCellFormatter().addStyleName(new_row, 5, "watchListRemoveColumn");
-						 
-					
-				
-				
+
 			}
 			 for (int i=1; i<flexTable.getRowCount();i++){
-//			 	  ((PhotoAnchor)flexTable.getWidget(i, 3)).setHref("#");
 				  ((Button)(flexTable.getWidget(i, 4))).setEnabled(true);
 				  ((Button)(flexTable.getWidget(i, 5))).setEnabled(true);
 			       flexTable.getRowFormatter().removeStyleName(i, "editTableRow");
@@ -757,16 +706,13 @@ int mdb=master.getYahrzeit().getDbId();
 	      flexTable.getCellFormatter().addStyleName(0, 3, "photoColumn");
 	      flexTable.getCellFormatter().addStyleName(0, 4, "editColumn");
 		    flexTable.getCellFormatter().addStyleName(0, 5, "watchListRemoveColumn");
-	//	System.out.println ("after init new table row count is " + flexTable.getRowCount());
 	}
 		
 		void setAllMyButtonsEnabled(boolean enabled){
-			Widget w = null;
-			for (Iterator<Widget> i = flexTable.iterator();i.hasNext();){
-				if ( (w=i.next()) instanceof Button) {
+			for (Widget w : flexTable){
+				if (w instanceof Button) {
 					 ((Button)w).setEnabled(enabled);
 				}
-				 
 			}
 		}
 private void editRow(int dbid) {
@@ -876,7 +822,6 @@ private void editRow(int dbid) {
 	public void modifyRowRequest(Yahrzeit h1){
 		SvrReq svr=(SvrReq)JavaScriptObject.createObject();
 		svr.setMethod("modify");
-		//svr.setFbAuthResponse(YahrzeitCandle.fbAuthResponse);
 
 		 Yahrzeit h[] = {h1};
 	        svr.setYahrzeits(JsArrayUtils.readOnlyJsArray(h));
@@ -890,43 +835,6 @@ private void editRow(int dbid) {
 		 submitData(svr);
 	}
 	
-	
-	/*public void dialogInitCode() {
-	 Button ok = new Button("delete");
-     Button cancel = new Button("cancel");
-     ok.addClickHandler(new ClickHandler() {
-         public void onClick(ClickEvent event) {
-           deleteDialog.hide();
-         }
-       });
-       cancel.addClickHandler(new ClickHandler() {
-           public void onClick(ClickEvent event) {
-             deleteDialog.hide();
-           }
-         });
-       HorizontalPanel buttonPanel = new HorizontalPanel();
-       buttonPanel.add(ok);
-       buttonPanel.add(cancel);
-       deleteDialog.setWidget(buttonPanel);
-
-deleteDialog.setGlassEnabled(true);
-deleteDialog.setText("delete selected yahrzeit?");
-
-	}// end dialog init code
-	*/
-	/*public static native void addPhotoRequest(Yahrzeit yahrzeit_with_photo) /*-{
-		
-		fql="select pid,aid,src_small,src_big from photo where object_id="+object_id;
-		
-		@com.topweb.yahrzeitcandle.client.Console::log(Ljava/lang/String;)("fql: " + fql);
-		req={'method':'fql.query','query':fql};
-		fqlCallback=
-		$entry(@com.topweb.yahrzeitcandle.client.YahrzeitCandle::processUploadPhotoResponse(Lcom/google/gwt/core/client/JsArray;));
-		$wnd.FB.api(req,fqlCallback);
-		
-	}-*/;
-	
-	
 	public static void addPhoto(Yahrzeit yahrzeit_with_photo) {
 	
 	}
@@ -934,23 +842,17 @@ deleteDialog.setText("delete selected yahrzeit?");
 		if (h1==null) return;
 		SvrReq svr=(SvrReq)JavaScriptObject.createObject();
 		svr.setMethod("add_photo");
-		//svr.setFbAuthResponse(YahrzeitCandle.fbAuthResponse);
 		h1.setPhoto(String.valueOf(fbPhoto.getId()));
-		 
 		 Yahrzeit h[] = {h1};
 	        svr.setYahrzeits(JsArrayUtils.readOnlyJsArray(h));
-	  
 		YahrzeitCandle.yahrFlexTable.submitData(svr);
 	}
 
 	public static void clearPhotoRequest(YahrzeitImage fbPhoto) {
 		SvrReq svr=(SvrReq)JavaScriptObject.createObject();
 		svr.setMethod("clear_photo");
-		//svr.setFbAuthResponse(YahrzeitCandle.fbAuthResponse);
 		Yahrzeit h[] = {fbPhoto.getYahrzeit()};
 		svr.setYahrzeits(JsArrayUtils.readOnlyJsArray(h));
-		//setPhoto(String.valueOf(fbPhoto.getYahrzeit().getDbId()));
-		 
 		YahrzeitCandle.yahrFlexTable.submitData(svr);	
 	}
 	public static void addPhotoComplete(Yahrzeit yahrzeit_with_photo) { // when uploading photo, not using chooser
@@ -996,7 +898,6 @@ deleteDialog.setText("delete selected yahrzeit?");
 		Console.log("graphquery: " + graphquery);
 		
 		new FBApi() {
-			 
 			@Override
 			public void apiCallback(JavaScriptObject response){
 				Console.logAsObject(response);
@@ -1010,28 +911,8 @@ deleteDialog.setText("delete selected yahrzeit?");
 						return photos;
 					}-*/;
 				}.getPhotos(response));
-				Console.log("length: " + m_YahrzeitContainerList.size());
-				for (YahrzeitContainer y : m_YahrzeitContainerList){
-					Console.log(y.getYahrzeit().getPhoto());
-					String curPhotoId=y.getYahrzeit().getPhoto();
-					for (int i=0;i<photos_to_url.length();i++){
-						if(photos_to_url.get(i).getId().equalsIgnoreCase(curPhotoId)){
-							int row1= getYahrzeitIndexFromDatabaseId(y.getYahrzeit().getDbId()) + 1;
-							Console.log("position for " + curPhotoId + "  is "+ row1);
-							 SimplePanel w = (SimplePanel) flexTable.getWidget(row1, 3);
-								YahrzeitImage curImage=
-								(YahrzeitImage)
-								((AbsolutePanel)((Widget)w.getWidget())).getWidget(0);
-							 if (curImage.getYahrzeit().getPhoto().equalsIgnoreCase(curPhotoId)){
-								 curImage.setUrl(photos_to_url.get(i).getUrl());
-							 }
-						}
-					}
-				}
-				 
+				YahrzeitCandle.yahrFlexTable.fireEvent(new ImageAddedEvent(photos_to_url));
 			}
 		}.get(graphquery);
-		
 	}
-	
 }
