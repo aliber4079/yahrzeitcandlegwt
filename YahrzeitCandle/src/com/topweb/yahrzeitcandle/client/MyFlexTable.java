@@ -304,24 +304,7 @@ int mdb=master.getYahrzeit().getDbId();
 					String graphquery="/me?ids=" + photoslist + "&fields=id,picture.type(normal)";
 					Console.log("graphquery: " + graphquery);
 					
-					new FBApi() {
-						 
-						@Override
-						public void apiCallback(JavaScriptObject response){
-							Console.logAsObject(response);
-							JsArray<PhotoNative> photos_to_url = (new Object(){
-								public native JsArray<PhotoNative> getPhotos(JavaScriptObject response) /*-{
-									photos=[]
-									for (i in response){
-										photos.push({id:response[i].id,picture:response[i].picture});
-									}
-									$wnd.console && $wnd.console.log(photos);
-									return photos;
-								}-*/;
-							}.getPhotos(response));
-							YahrzeitCandle.yahrFlexTable.fireEvent(new ImageAddedEvent(photos_to_url));
-						}
-					}.get(graphquery);
+					new FBApiGetPhotos().get(graphquery);
 				}//end photos section
 	
 	  				resizeFbIframe();
@@ -537,23 +520,7 @@ int mdb=master.getYahrzeit().getDbId();
 					    
 					    String graphquery="/me?ids=" + h.getPhoto() + "&fields=id,picture.type(normal)";
 					    Console.log("graphquery: " + graphquery);
-					    new FBApi() {
-							@Override
-							public void apiCallback(JavaScriptObject response){
-								Console.logAsObject(response);
-								JsArray<PhotoNative> photos_to_url = (new Object(){
-									public native JsArray<PhotoNative> getPhotos(JavaScriptObject response) /*-{
-										photos=[]
-										for (i in response){
-											photos.push({id:response[i].id,picture:response[i].picture});
-										}
-										$wnd.console && $wnd.console.log(photos);
-										return photos;
-									}-*/;
-								}.getPhotos(response));
-								YahrzeitCandle.yahrFlexTable.fireEvent(new ImageAddedEvent(photos_to_url));
-							}
-						}.get(graphquery);						
+					    new FBApiGetPhotos().get(graphquery);						
 					} else if (req.getMethod().equalsIgnoreCase("clear_photo")) {
 						Yahrzeit h = req.getYahrzeitList().get(0);
 						int row= getYahrzeitIndexFromDatabaseId(h.getDbId()) + 1;
@@ -897,22 +864,6 @@ private void editRow(int dbid) {
 	    String graphquery="/me?ids=" + yahrzeit_with_photo.getPhoto() + "&fields=id,picture.type(normal)";
 		Console.log("graphquery: " + graphquery);
 		
-		new FBApi() {
-			@Override
-			public void apiCallback(JavaScriptObject response){
-				Console.logAsObject(response);
-				JsArray<PhotoNative> photos_to_url = (new Object(){
-					public native JsArray<PhotoNative> getPhotos(JavaScriptObject response) /*-{
-						photos=[]
-						for (i in response){
-							photos.push({id:response[i].id,picture:response[i].picture});
-						}
-						$wnd.console && $wnd.console.log(photos);
-						return photos;
-					}-*/;
-				}.getPhotos(response));
-				YahrzeitCandle.yahrFlexTable.fireEvent(new ImageAddedEvent(photos_to_url));
-			}
-		}.get(graphquery);
+		new FBApiGetPhotos().get(graphquery);
 	}
 }

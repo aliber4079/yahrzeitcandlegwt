@@ -196,8 +196,6 @@ private static class CustomTreeModel implements TreeViewModel {
 	}
 	 
 public static void showUploader(){
-
-
 	    // Because we're going to add a FileUpload widget, we'll need to set the
 	    // form to use the POST method, and multipart MIME encoding.
 	    // Create a panel to hold all of the form widgets.
