@@ -26,54 +26,51 @@ function get_yahrzeit_count($user_id) {
     return $count;
   }
 
-function calc_greg_date($y_hmon,$y_hebday) {
-	$y_hmon=get_tishri_based_month_no($y_hmon);
-$hebmonths=array (
- "",
-"Nisan",
-"Iyar", 
-"Sivan",
-"Tamuz", 
-"Av",
-"Elul",
-"Tishrei",
-"Cheshvan",
-"Kislev",
-"Tevet",
-"Shvat",
-"Adar1",
-"Adar2",
-""
-);
-date_default_timezone_set("Asia/Jerusalem");
-$today=getdate();
-$mon=$today['mon'];
-$day=$today['mday'];
-$year=$today['year'];
+function calc_greg_date($y_hmon,$y_hebday, $y_hebyear=null, $id=1) { //this is where yahrzeit date gets calculated
+	//input: hebrew date
+	// convert to gregdate with jdtogreg + jewishtojd
+	// run gregdate thru hebcal
+	//  hebcal -h $year -Y $tmpfile
+	//output: greg date
+	$y_hmon=get_tishri_based_month_no($y_hmon); //what jewishtojd expects
 
-list ($hmon,$hebday,$hebyear)=explode("/",jdtojewish(gregoriantojd($mon, $day, $year)));
-
- $hebyear1 = 0;
-    if (calc_month_offset($y_hmon) < calc_month_offset($hmon) )
-       $hebyear1=$hebyear+1;
-    else if (calc_month_offset($y_hmon) > calc_month_offset($hmon) )
-       $hebyear1=$hebyear;
-    else { // months equal
-      if ($y_hebday>=$hebday) $hebyear1=$hebyear;
-     else
-      $hebyear1=$hebyear+1;
-     }
-
-	if ($y_hebday==30 && $y_hmon==8 && !long_cheshvan($hebyear1)) {
-	 $y_hebday=1;
-	 $y_hmon=9;
-	} else if ($y_hebday==30 && $y_hmon==9 && short_kislev($hebyear1)) {
-	 $y_hebday=29;
-	 $y_hmon=9;
+	$this_hebyear=$year=$month=$day=null;
+	$today=explode("/",jdtojewish(unixtojd(time())));
+	$this_hebyear=$today[2];
+	$next_hebyear=$this_hebyear+1;
+	if ($y_hebyear==null){
+		//use current yr
+		$y_hebyear=$this_hebyear;
 	}
-	list($month, $day, $year) = explode('/',jdtogregorian(jewishtojd($y_hmon, $y_hebday, $hebyear1)));
-    return sprintf('%d-%02d-%02d', $year,$month,$day);
+	list($month, $day, $year) = explode('/',jdtogregorian(jewishtojd($y_hmon, $y_hebday, $y_hebyear)));
+	$output=hebcal_yahrzeit($month,$day,$year,$this_hebyear,$id);
+	list ($returned_gregdate,$returned_id)=explode(" ", $output);
+	
+	//if $returned_gregdate prior to today...
+	if (strtotime($returned_gregdate) < time()){
+		$output=hebcal_yahrzeit($month,$day,$year,$next_hebyear,$id);
+		list ($returned_gregdate,$returned_id)=explode(" ", $output);
+	}
+	
+	
+	if ($returned_id==$id){
+		$year=$month=$day=null;
+		list($month,$day,$year)=explode("/",$returned_gregdate);
+		return sprintf('%d-%02d-%02d', $year,$month,$day);
+	}
+	return null;
+}
 
+function hebcal_yahrzeit($month,$day,$year,$this_hebyear,$id){
+	$datestr=sprintf ("%d %d %4d",$month,$day,$year);
+	$file_contents=$datestr . " " . $id . PHP_EOL ;
+	$tmpfile= tempnam(sys_get_temp_dir(),"hebcal");
+	file_put_contents($tmpfile, $file_contents);
+	$result=null;
+	$command=AppConfig::$hebcal_path  . " -h -H $this_hebyear -Y $tmpfile";
+	$output=exec($command,$result);
+	unlink($tmpfile);
+	return $output;
 }
 
 function calc_month_offset($month) {
@@ -184,9 +181,9 @@ function delete_yahrzeit($user_id, $dbid) {
 }
 function add_yahrzeit($user_id, $yahrzeit) {
     $conn = get_db_conn();
-    $greg_date=calc_greg_date($yahrzeit->{"date_month"},$yahrzeit->{"date_day"});
+    $greg_date=calc_greg_date($yahrzeit->{"date_month"},$yahrzeit->{"date_day"},$yahrzeit->{"date_year"},$user_id);
 
- $sql="insert into yahrzeit (id, uid, honoree, date_month,date_day,date_year,".
+	$sql="insert into yahrzeit (id, uid, honoree, date_month,date_day,date_year,".
     "greg_date) ".
    "values (null, $user_id,'".$yahrzeit->{"honoree"}."',".
        $yahrzeit->{"date_month"}.",".$yahrzeit->{"date_day"}.",".
