@@ -421,6 +421,15 @@ public class MyFlexTable implements HasHandlers{
 								Console.log("pong");
 					} else 
 					if (req.getMethod().compareToIgnoreCase("resync")==0) {
+						//Console.log(YahrzeitCandle.perms.get("email"));
+						//Console.logAsObject(req.getUserPrefs().getAllowEmail());
+						if (YahrzeitCandle.perms.get("email").compareTo("granted")==0
+							&& req.getUserPrefs().getAllowEmail()) {
+							YahrzeitCandle.canEmail(true);
+						}
+						else {
+							YahrzeitCandle.canEmail(false);
+						}
 						m_YahrzeitContainerList.removeAll(m_YahrzeitContainerList);
 						clearRows();
 						YahrzeitCandle.sw_singleton.newHonoree.setReadOnly(false);

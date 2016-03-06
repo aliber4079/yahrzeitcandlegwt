@@ -40,7 +40,8 @@ public class SvrReq extends JavaScriptObject {
 	public native final JsArray<Yahrzeit> getYahrzeitList() /*-{
 		return this.yahrzeitlist;
 	}-*/;
-	
-
+	public native final UserPrefs getUserPrefs() /*-{
+		return this.userprefs;
+	}-*/;
 
 }

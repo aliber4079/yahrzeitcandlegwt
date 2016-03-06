@@ -191,22 +191,15 @@ public static Map<String,String> perms=new HashMap<String,String>();
 	}-*/;
 
 	public static void processPermsResponse( JsArray<Perm> theperms) {
-		 
+		
 		for (int i=0;i<theperms.length();i++){
 			Perm p = theperms.get(i);
 			perms.put(p.getPermission(),p.getStatus());
 			
 		}
-		if (perms.get("email").compareTo("granted")==0) {
-			emailNotif.setText(willEmail);
-			emailNotif.setValue(true);
-		}
-		else {
-			emailNotif.setText(wontEmail);
-			emailNotif.setValue(false);
-		}
+		
 		newHonoree.setReadOnly(false);
-		emailNotif.setVisible(true);
+		//emailNotif.setVisible(true);
 		
 		intro_msg=MyTextResources.INSTANCE.getIntroMsg().getText();
 		introLabel.setHTML(intro_msg);
@@ -259,6 +252,7 @@ public static Map<String,String> perms=new HashMap<String,String>();
 			public void onValueChange(ValueChangeEvent<Boolean> event) {
 	    		
 				boolean allow_email=event.getValue();
+				setAllowEmailsRequest(allow_email);
 				 
 			} //end  onvaluechange
 	      } //end anon constructor
@@ -267,7 +261,7 @@ public static Map<String,String> perms=new HashMap<String,String>();
 	    
 	    
 	    // Assemble Main panel.
-	    emailNotif.setVisible(false);
+	    emailNotif.setVisible(true);
 	     
 	    
 	   
@@ -678,4 +672,9 @@ public static native void loginToFB() /*-{
 			}
 		  }
 		}
+
+	public static void canEmail(boolean b) {
+		emailNotif.setText(b?willEmail:wontEmail);
+		emailNotif.setValue(b);
+	}
 }

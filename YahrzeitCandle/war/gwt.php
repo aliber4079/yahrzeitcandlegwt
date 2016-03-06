@@ -125,18 +125,15 @@ else if ($arr->{'method'}=="delete") {
 } else if($arr->{'method'}=="allow_email") {
 if (!isset($arr->{'authResponse'})) {
 error_log("in allow_email: no authResponse");
-$j=json_encode(Array(Array("status"=>"OK",'method'=>"allow_email", "allow_email"=>FALSE)));
+$j=json_encode(Array("status"=>"OK",'method'=>"allow_email", "allow_email"=>FALSE));
 print ($j);
 return null;
 }
 $allow_email=$arr->{'allow_email'} && TRUE;
-$oldperms=get_perms($user_id);
-$allow_publish=$oldperms['allow_publish'] && TRUE;
-$perms=array("allow_email"=>$allow_email && TRUE);
-   set_perms($perms,$user_id);
+$prefs=array("allow_email"=>$allow_email && TRUE);
+   set_prefs($prefs,$user_id);
    $j=json_encode(array("status"=>"OK",'method'=>"allow_email", "allow_email"=>$allow_email));
 	print ($j);
-
 }
 
 function reauth($e){

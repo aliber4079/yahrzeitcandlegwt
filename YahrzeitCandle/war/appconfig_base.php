@@ -218,27 +218,13 @@ function modify_yahrzeit($user_id, $yahrzeit) {
   $yahrzeit->{'greg_date'}=$greg_date;
     return $yahrzeit;
 }
-function set_perms($perms,$uid) {
+function set_prefs($prefs,$uid) {
 global $facebook;
 if (!isset($uid)) return NULL;
-$lltoken=null;
-error_log("last_visit was ".$perms['last_visit']." and time is ".time());
-if (false && $perms['last_visit']<time()-86400){
- error_log ("setting extended access token because ".$perms['last_visit'].
-	"< ".time()."-86400");
- $facebook->setExtendedAccessToken();
- $lltoken=$facebook->getAccessToken();
- error_log("tried to get lltoken: $lltoken");
-}else {
-    $conn = get_db_conn();
- list ($lltoken)=mysqli_fetch_row(mysqli_query($conn,"select lltoken from users where uid=$uid"));
- error_log("has logged in within the past day, not getting lltoken which was $lltoken");
-}
-$sql="replace into users values (".$uid.
-   ",".intval($perms['allow_email']).",".
-   intval($perms['allow_publish']).",unix_timestamp(),".
-    ($lltoken ? "'$lltoken'" : "NULL").
-	")";
+$conn = get_db_conn();
+$sql="replace into users values ($uid,".
+		intval($prefs['allow_email']).
+	",0,unix_timestamp(),NULL)";
     error_log("sql: $sql");
     $conn = get_db_conn();
     $res = mysqli_query($conn,$sql);
