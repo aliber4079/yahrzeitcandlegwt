@@ -135,11 +135,13 @@ if (!isset($arr->{'authResponse'})) {
 	print ($j);
 	return null;
  }
-$prefs=null;
+$prefs=$allow_email=null;
 if (isset($arr->{'allow_email'})&& $arr->{'allow_email'}=="1"){
+	$allow_email=TRUE;
 	$prefs=array("allow_email"=>TRUE);
 } else {
 	$prefs=array("allow_email"=>FALSE);
+	$allow_email=FALSE;
 }
 set_prefs($prefs,$user_id);
 $j=json_encode(array("status"=>"OK",'method'=>"allow_email", "allow_email"=>$allow_email));

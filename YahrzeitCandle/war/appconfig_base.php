@@ -224,7 +224,7 @@ if (!isset($uid)) return NULL;
 $conn = get_db_conn();
 $sql=null;
 if ($prefs==null){
-	$sql="replace into users (uid, last_visit) values ($uid,unix_timestamp())";
+	$sql="insert into users (uid) values ($uid) on duplicate key update last_visit=unix_timestamp()";
 } else {
 	$sql="replace into users values ($uid,".
 		intval($prefs['allow_email']).
