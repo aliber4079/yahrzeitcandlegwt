@@ -38,6 +38,9 @@ public class YahrzeitImage extends Image implements ImageAddedHandler{
 	public void setYahrzeit(Yahrzeit yahrzeit){
 		//FB.api
 		m_yahrzeit=yahrzeit;
+		if (m_yahrzeit.getPhoto().getUrl()!=null){
+			setUrl(m_yahrzeit.getPhoto().getUrl());
+		}
 		 //+yahrzeit.getPhoto());
 	}
 	public Yahrzeit getYahrzeit(){

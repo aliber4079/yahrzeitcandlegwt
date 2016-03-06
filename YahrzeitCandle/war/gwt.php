@@ -1,23 +1,13 @@
 <?php
-//exit(print_r($_SESSION,1));
 
 include_once "AppConfig.class.php";
-
 $user_id=$psr="0";
-$files=$_FILES['photoUploader'];
-error_log("files: " . print_r($files,1));
-if (!empty($files)){
+if (isset($_FILES['photoUploader'])){
+	$files=$_FILES['photoUploader'];
+	error_log("files: " . print_r($files,1));
 	$authResponse=json_decode(str_replace("\\","",$_REQUEST['authResponse']));
 	$fbtoken=$authResponse->{'accessToken'};
-	$fb = new Facebook\Facebook([
-			'app_id' => AppConfig::$appid,
-			'app_secret' => AppConfig::$appsecret,
-			'default_graph_version' => 'v2.5',
-			'cookie' => true,
-			'default_access_token' => $fbtoken,
-			 
-	]);
-	
+	$fb=phpsdk($fbtoken);
 	try {
 		$data = [
 				'message' => '',
@@ -97,13 +87,13 @@ else if ($arr->{'method'}=="clear_photo") {
 }
 else if ($arr->{'method'}=="resync") {
   session_start();
-  $_SESSION['fbtoken']= $arr->authResponse->accessToken;
-  session_commit();
+  /*$_SESSION['fbtoken']= $arr->authResponse->accessToken;
+  session_commit();*/
   $yahrzeits=get_yahrzeits($user_id);
-  $photos=get_photos($user_id);
+  
   error_log("got yahrzeits");
   $userprefs=get_userprefs($user_id);
-  $json_array=array("status"=>"OK", "method"=>"resync","userprefs"=>$userprefs,"photos"=>$photos,"yahrzeitlist"=>$yahrzeits);
+  $json_array=array("status"=>"OK", "method"=>"resync","userprefs"=>$userprefs,"yahrzeitlist"=>$yahrzeits);
   $j=json_encode($json_array);
   error_log("resync json: $j");
   exit($j);

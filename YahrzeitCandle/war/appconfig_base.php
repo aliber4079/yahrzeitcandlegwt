@@ -148,12 +148,11 @@ if ($hmon==12 && !LEAP_YR_HEB($hebyear)) {
 }
 
 function get_yahrzeits($user_id) {
-global $facebook,$perms ;
-    $conn = get_db_conn();
+//global $facebook,$perms ;
+$photos=get_photos($user_id);
+	$conn = get_db_conn();
     $sql = "SELECT id, honoree,date_month,date_day,date_year,greg_date,photo  FROM yahrzeit
  where uid=$user_id order by greg_date asc";
-
-
 error_log($sql);
 $yahrzeits=array();
 $res = mysqli_query($conn,$sql);
@@ -162,9 +161,19 @@ while ($row = mysqli_fetch_assoc($res)) {
       $row['date_month']=intval($row['date_month']);
       $row['id']=intval($row['id']);
       $row['date_year']=intval($row['date_year']);
-
+      if ($row['photo']!=null){
+      	if (count($photos)>0) {
+      		foreach ($photos as $photo){
+      			if ($photo->id==$row['photo']){
+      				$row['photo']=array("id"=>$photo->id,"picture"=>$photo->picture);
+      				break;
+      			}
+      		}
+      	}
+      }
       $yahrzeits[] = $row;
 }
+
 //error_log("perms from global variable: ".print_r($perms,1));
 error_log("about to return yahrzeits");
     return $yahrzeits;
@@ -248,15 +257,61 @@ if (!$res) {
 }
 
 function get_photos ($uid){
+	global $arr;
+	$fbtoken=$arr->authResponse->accessToken;
+	$fb=phpsdk($fbtoken);
+	 
 	$conn = get_db_conn();
-	$sql="select GROUP_CONCAT(distinct photo) as photos from yahrzeit where uid=$uid";
+	//$sql="select GROUP_CONCAT(distinct photo) as photos from yahrzeit where uid=$uid";
+	$sql="select distinct photo from yahrzeit where uid=$uid and photo is not null";
 	$res = mysqli_query($conn,$sql);
 	if (!$res) {
 		error_log($conn->error);
 		return 0;
 	}
-	$photos=mysqli_fetch_assoc($res)['photos'];
-	return $photos;
+	$batch=$photos=null;
+	$i=0;
+	while ($photo=mysqli_fetch_assoc($res)['photo']) {
+	 $photos[$i]=$photo;
+	 $batch[]=$fb->request('GET',"/" . $photo . "?fields=id,picture.type(normal)");
+	 $i++;
+	}
+	if (count($photos)==0){return null;}
+error_log(print_r($photos,1));
+	//validate photos.
+	try {
+		$response = $fb->sendBatchRequest($batch);
+		$graphNode = $response->getGraphNode();
+		$photos_to_delete=$photos_to_display=null;
+		foreach ($graphNode as $key => $value) {
+			$value=json_decode($value);
+			error_log("code: " . $value->code);
+			error_log($value->body);
+		if ($value->code==200) {
+				$photos_to_display[]=json_decode($value->body);
+			} else  {
+				error_log("delete " . $photos[$key]);
+				$photos_to_delete[]=$photos[$key];
+			}
+		}
+		error_log(print_r($photos_to_display,1));
+		if (count($photos_to_delete)>0){
+			$sql="update yahrzeit set photo=null where uid=$uid and photo in ('" .
+			implode("','",$photos_to_delete) . "')";
+			error_log($sql);
+			mysqli_query($conn,$sql);		
+		}
+		if (count($photos_to_display)>0) {
+			return $photos_to_display;
+		}
+		return null;
+		
+	} catch(FacebookRequestException $e) {
+		// error handling
+		return($e->getMessage());
+	}
+	
+	//error_log(print_r(array_column($node->asArray(),'body'),1));
 	
 }
 
@@ -297,14 +352,26 @@ function add_photo($id, $pid) {
 if (!isset($pid)  || !isset($id)) 
 	return (Array("method"=>"add_photo","status"=>"error"));
 try {
+	global $arr;
+	$fbtoken=$arr->authResponse->accessToken;
+	$fb=phpsdk($fbtoken);
+	//$response=$fb->get("/".$pid->id."?fields=id,picture.type(normal)");
+	$request=$fb->request('GET', "/" . $pid->id . "?fields=id,picture.type(normal)" );
+	$response=$fb->getClient()->sendRequest($request);
+	$graphNode = $response->getGraphNode();
+	$photo=null;
+	if ($graphNode->getField("id")==$pid->id && $graphNode->getField("picture") != null ){
+		$photo=array("id"=>$pid->id,"picture"=>$graphNode->getField("picture"));
+	}
     $conn = get_db_conn();
-    $sql = "update yahrzeit set photo='$pid'  where id=$id";
+    $sql = "update yahrzeit set photo='$pid->id'  where id=$id";
     error_log($sql);
     $res = mysqli_query($conn,$sql);
     $sql = "select * from yahrzeit where id=$id";
     $res = mysqli_query($conn,$sql);
     $rows = mysqli_fetch_assoc($res);
 	$rows['id']=intval($rows['id']);
+	$rows['photo']=$photo;
     return (Array("method"=>"add_photo","status"=>"OK","yahrzeitlist"=>array($rows)));
   } catch (Exception $e) {
     error_log("exception $e");
@@ -379,4 +446,15 @@ function base64_url_decode($input) {
 	return base64_decode(strtr($input, '-_', '+/'));
 }
 
+function phpsdk($fbtoken){
+	$fb = new Facebook\Facebook([
+			'app_id' => AppConfig::$appid,
+			'app_secret' => AppConfig::$appsecret,
+			'default_graph_version' => 'v2.5',
+			'cookie' => false,
+			'default_access_token' => $fbtoken,
+	
+	]);
+	return $fb;
+}
 ?>

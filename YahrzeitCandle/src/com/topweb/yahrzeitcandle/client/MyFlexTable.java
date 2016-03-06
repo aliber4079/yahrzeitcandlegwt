@@ -189,14 +189,14 @@ public class MyFlexTable implements HasHandlers{
 				ListIterator<YahrzeitContainer> incoming_iter=incomingList.listIterator();
 				ListIterator<YahrzeitContainer> main_iter=m_YahrzeitContainerList.listIterator();
 
-				 Set<String>has_photos=new HashSet<String>(0);
-				 String photoslist=new String();
 
 				while (incoming_iter.hasNext() ) {
 					YahrzeitContainer incoming = incoming_iter.next();
 
 					//photos section
-					if (incoming.getYahrzeit().getPhoto()!=null){
+					/* Set<String>has_photos=new HashSet<String>(0);
+					 String photoslist=new String();
+						if (incoming.getYahrzeit().getPhoto()!=null){
 						if (has_photos.size()==0){
 							photoslist=incoming.getYahrzeit().getPhoto();
 							has_photos.add(incoming.getYahrzeit().getPhoto());
@@ -207,23 +207,18 @@ public class MyFlexTable implements HasHandlers{
 							}
 						}
 					}//end photos section				
-					
+					*/
 					
 				 while  (main_iter.hasNext()){
-						YahrzeitContainer master = main_iter.next();
-int idb=incoming.getYahrzeit().getDbId();
-int mdb=master.getYahrzeit().getDbId();
-		if (idb == mdb) {
-						
-					
-					int index = main_iter.previousIndex();
-					int row = index + 1; //to account for header row
-					if (row < flexTable.getRowCount()) { 
-						flexTable.insertRow(row); 
-					}
-				
-
-				
+					YahrzeitContainer master = main_iter.next();
+					int idb=incoming.getYahrzeit().getDbId();
+					int mdb=master.getYahrzeit().getDbId();
+					if (idb == mdb) {
+						int index = main_iter.previousIndex();
+						int row = index + 1; //to account for header row
+						if (row < flexTable.getRowCount()) { 
+							flexTable.insertRow(row); 
+						}
 					flexTable.setText(row, 0, incoming.getYahrzeit().getName());
 				    flexTable.setText(row, 1, incoming.getYahrzeit().getHebDay()+ " " + YahrzeitCandle.heb_months[incoming.getYahrzeit().getHebMonth()]);
 				    flexTable.setText(row, 2, YahrzeitCandle.format_pretty.format(incoming.getGregDisplayDate()));
@@ -236,8 +231,9 @@ int mdb=master.getYahrzeit().getDbId();
 				     
 					    FocusPanel fPanel = new FocusPanel();					
 				    	final YahrzeitImage placeholderImage=new YahrzeitImage(incoming.getYahrzeit());
-				    						    
-				    	Console.log("setting photo to " + incoming.getYahrzeit().getPhoto());//existing photos
+				    	
+				    	//Console.log("setting photo to " + incoming.getYahrzeit().getPhoto());//existing photos
+				    	placeholderImage.setUrl(incoming.getYahrzeit().getPhoto().getUrl());
 				    	fPanel.addMouseOverHandler(new MouseOverHandler() {
 							@Override
 							public void onMouseOver(MouseOverEvent event) {
@@ -298,15 +294,14 @@ int mdb=master.getYahrzeit().getDbId();
 				}
 
 				//photos section
-				Console.log(photoslist);
-				if (has_photos.size()>0){
+				/*if (has_photos.size()>0){
 					Console.log("ids: " + photoslist);
 					String graphquery="/me?ids=" + photoslist + "&fields=id,picture.type(normal)";
 					Console.log("graphquery: " + graphquery);
 					
 					new FBApiGetPhotos().get(graphquery);
 				}//end photos section
-	
+	*/
 	  				resizeFbIframe();
 	  				setStatCount(m_YahrzeitContainerList.size());
 		}
@@ -490,8 +485,8 @@ int mdb=master.getYahrzeit().getDbId();
 						Console.log("position is "+ row);
 						flexTable.getWidget(row, 3).removeFromParent();
 						YahrzeitImage placeholderImage=new YahrzeitImage(h);
-					    
-				    	Console.log("setting photo to " + h.getPhoto());
+					    placeholderImage.setUrl(h.getPhoto().getUrl());
+				    	//Console.log("setting photo to " + h.getPhoto());
 				       
 				    	fPanel.addMouseOverHandler(new MouseOverHandler() {
 							@Override
@@ -518,9 +513,9 @@ int mdb=master.getYahrzeit().getDbId();
 				    	}
 					    
 					    
-					    String graphquery="/me?ids=" + h.getPhoto() + "&fields=id,picture.type(normal)";
+					    /*String graphquery="/me?ids=" + h.getPhoto() + "&fields=id,picture.type(normal)";
 					    Console.log("graphquery: " + graphquery);
-					    new FBApiGetPhotos().get(graphquery);						
+					    new FBApiGetPhotos().get(graphquery);*/						
 					} else if (req.getMethod().equalsIgnoreCase("clear_photo")) {
 						Yahrzeit h = req.getYahrzeitList().get(0);
 						int row= getYahrzeitIndexFromDatabaseId(h.getDbId()) + 1;
@@ -809,7 +804,7 @@ private void editRow(int dbid) {
 		if (h1==null) return;
 		SvrReq svr=(SvrReq)JavaScriptObject.createObject();
 		svr.setMethod("add_photo");
-		h1.setPhoto(String.valueOf(fbPhoto.getId()));
+		h1.setPhotoId(String.valueOf(fbPhoto.getId()));
 		 Yahrzeit h[] = {h1};
 	        svr.setYahrzeits(JsArrayUtils.readOnlyJsArray(h));
 		YahrzeitCandle.yahrFlexTable.submitData(svr);
@@ -833,14 +828,14 @@ private void editRow(int dbid) {
 		int position= getYahrzeitIndexFromDatabaseId(yahrzeit_with_photo.getDbId()) + 1;
 		Console.log("position is "+ position);
 		flexTable.getWidget(position, 3).removeFromParent();
-		final YahrzeitImage placeholderImage=new YahrzeitImage(yahrzeit_with_photo);
+		YahrzeitImage placeholderImage=new YahrzeitImage(yahrzeit_with_photo);
 	    
-    	Console.log("setting photo to " + yahrzeit_with_photo.getPhoto());
+    	/*Console.log("setting photo to " + yahrzeit_with_photo.getPhoto());
     	for (YahrzeitContainer y : m_YahrzeitContainerList){
 			if (y.getYahrzeit().getDbId()==yahrzeit_with_photo.getDbId()){
 				y.getYahrzeit().setPhoto(yahrzeit_with_photo.getPhoto());
 			}
-    	}
+    	}*/
     	fPanel.addMouseOverHandler(new MouseOverHandler() {
 			@Override
 			public void onMouseOver(MouseOverEvent event) {
@@ -861,9 +856,8 @@ private void editRow(int dbid) {
 	    flexTable.setWidget(position, 3, fPanel );
 	    
 	    
-	    String graphquery="/me?ids=" + yahrzeit_with_photo.getPhoto() + "&fields=id,picture.type(normal)";
+	    /*String graphquery="/me?ids=" + yahrzeit_with_photo.getPhoto() + "&fields=id,picture.type(normal)";
 		Console.log("graphquery: " + graphquery);
-		
-		new FBApiGetPhotos().get(graphquery);
+		new FBApiGetPhotos().get(graphquery);*/
 	}
 }

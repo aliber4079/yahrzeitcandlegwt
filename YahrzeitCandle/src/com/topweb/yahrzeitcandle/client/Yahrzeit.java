@@ -45,13 +45,13 @@ public final class Yahrzeit extends JavaScriptObject { //implements Comparable<H
 			return format.parse(this.getGregDate()).compareTo(format.parse(o.getGregDate()));
 		}*/
 
-		public final native String getPhoto() /*-{return this.photo;}-*/;
+		public final native PhotoNative getPhoto() /*-{return this.photo;}-*/;
 			
-		public final native String getSrcSmall() /*-{return this.src_small;}-*/;
-		public final native String getSrcBig() /*-{return this.src_big;}-*/;
 
-		public final native void setPhoto(String photo) /*-{
+		public final native void setPhoto(PhotoNative photo) /*-{
 			this.photo=photo;
 		}-*/;
-		  
+		public final native void setPhotoId(String id) /*-{
+			this.photo={id:id};
+		}-*/;
 }
