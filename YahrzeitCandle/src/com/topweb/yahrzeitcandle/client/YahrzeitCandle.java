@@ -136,7 +136,6 @@ public static boolean fqlAllowPhotos=false,fqlAllowWall=false, fqlAllowEmail=fal
 
 public static Label ycstats=new Label("Your Yahrzeit list");
 public static Button addYahrButton=null, addCancelButton=null;
-public static Button fbLoginButton=null;
 
 public static String AppName="yahrzeitcandle";
 public static String willPublish="Yahrzeit Candle will post a note to your "+
@@ -172,7 +171,7 @@ public static Map<String,String> perms=new HashMap<String,String>();
      			$wnd.console && $wnd.console.log(response);
 				if (response.status!="connected"){
 					$wnd.console && $wnd.console.log("not logged in");
-					$wnd.top.location="https://www.facebook.com/dialog/oauth?client_id=98869004584&redirect_uri=http://apps.facebook.com/yahrzeitcandle/";
+					$wnd.top.location="https://www.facebook.com/dialog/oauth?client_id=98869004584&redirect_uri=https://apps.facebook.com/yahrzeitcandle/";
 					return;
 				}
 				$wnd.console && $wnd.console.log("storing auth response");
@@ -356,51 +355,7 @@ public static Map<String,String> perms=new HashMap<String,String>();
 	
 
 
-	public static native void fblogin(String theperms) /*-{
-		$wnd.console && $wnd.console.log("in fblogin function");
-		$wnd.FB.login(function(response) {
-			$wnd.console && $wnd.console.log("response: ");
-			$wnd.console && $wnd.console.log(response);
-		  @com.topweb.yahrzeitcandle.client.YahrzeitCandle::fbloginCallback(Lcom/topweb/yahrzeitcandle/client/FBAuthResponse;)(response);
-			}, {scope: theperms, return_scopes:true});
-	  
-	}-*/;
-
 	
-	public static void fbloginCallback(FBAuthResponse response){
-		 
-		Console.log("response: " );
-		Console.logAsObject(response);
-		/*if (theperms.contains("email")) {
-			fqlAllowEmail=true;
-		}
-		if (fqlAllowEmail){ 
-			emailNotif.setValue(true);	
-			YahrzeitCandle.emailNotif.setText(YahrzeitCandle.willEmail);
-		}
-		else { 
-			emailNotif.setValue(false);	
-			YahrzeitCandle.emailNotif.setText(YahrzeitCandle.wontEmail);
-		}
-
-	
-		if (theperms.contains("user_photos")) {
-			fqlAllowPhotos=true;
-			Console.log("user photos set to" + fqlAllowPhotos);
-			PhotoBrowser.showUploader();
-		}
-		 
-		if (permsRequested.equals(emailPerms)) {
-			if (fqlAllowEmail) {
-				setAllowEmailsRequest(true);
-			}
-			else {
-				emailNotif.setText(wontEmail);
-				emailNotif.setValue(false);
-			}
-		}*/
-		permsRequested="";
-	}
 	 
 
 
@@ -461,12 +416,31 @@ public static Map<String,String> perms=new HashMap<String,String>();
 	    
 	 
 	public static void setAllowEmailsRequest(boolean allow_email){
-		SvrReq svr=(SvrReq)JavaScriptObject.createObject();
-        svr.setMethod("allow_email");
-		svr.setFbAuthResponse(YahrzeitCandle.fbAuthResponse);
-		svr.setAllowEmail(allow_email);
-          
-        yahrFlexTable.submitData(svr);
+		
+	    final String perm="email";
+		if(allow_email==true && perms.get(perm).compareTo("granted")!=0){
+			//means we want email but dont have permissions 
+			new FBLogin(){
+				@Override
+				public void apiCallback(FBAuthResponse response) {
+				 Console.logAsObject(response);
+				 if(response.getPermsGranted().contains(perm)){
+					YahrzeitCandle.perms.put(perm, "granted");
+					SvrReq svr=(SvrReq)JavaScriptObject.createObject();
+			        svr.setMethod("allow_email");
+					svr.setFbAuthResponse(YahrzeitCandle.fbAuthResponse);
+					svr.setAllowEmail(true);
+			        YahrzeitCandle.yahrFlexTable.submitData(svr);
+				 }
+				}
+			  }.login(perm);
+		} else {
+			SvrReq svr=(SvrReq)JavaScriptObject.createObject();
+	        svr.setMethod("allow_email");
+			svr.setFbAuthResponse(YahrzeitCandle.fbAuthResponse);
+			svr.setAllowEmail(allow_email);
+	        yahrFlexTable.submitData(svr);
+		}
 	}
 	
 	public static int calc_month_offset(int month) {

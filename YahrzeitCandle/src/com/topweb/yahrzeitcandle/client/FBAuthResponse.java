@@ -10,5 +10,11 @@ public class FBAuthResponse extends JavaScriptObject {
 	public native final int getUid () /*-{return this.authResponse.userID}-*/;
 	public native final String getAccessToken() /*-{return this.authResponse.accessToken}-*/;
 	public native final JavaScriptObject getResponse() /*-{return this.authResponse}-*/;
+	public native final String getPermsGranted() /*-{
+		if (this.authResponse && this.authResponse.grantedScopes) {
+		return this.authResponse.grantedScopes;
+		}
+		return null;
+	}-*/;
 	
 }

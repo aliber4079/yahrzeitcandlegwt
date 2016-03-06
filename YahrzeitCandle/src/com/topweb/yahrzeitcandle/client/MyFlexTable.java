@@ -263,11 +263,12 @@ public class MyFlexTable implements HasHandlers{
 								Console.log("active Yahrzeit: " + PhotoBrowser.activeYahrzeit.getName());
 								  if (YahrzeitCandle.perms.get("user_photos")==null || YahrzeitCandle.perms.get("user_photos").compareTo("granted")!=0) {
 									  new FBLogin(){
-
 										@Override
 										public void apiCallback(FBAuthResponse response) {
-											 Console.log(response.getStatus());
-											
+											 Console.logAsObject(response);
+											 if(response.getPermsGranted().contains("user_photos")){
+												YahrzeitCandle.perms.put("user_photos", "granted");
+											}
 										}
 										  
 									  }.login("user_photos");
