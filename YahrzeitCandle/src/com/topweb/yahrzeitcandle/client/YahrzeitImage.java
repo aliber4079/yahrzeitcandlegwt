@@ -41,7 +41,7 @@ public class YahrzeitImage extends Image implements ImageAddedHandler{
 		if (m_yahrzeit.getPhoto().getUrl()!=null){
 			setUrl(m_yahrzeit.getPhoto().getUrl());
 		}
-		 //+yahrzeit.getPhoto());
+		
 	}
 	public Yahrzeit getYahrzeit(){
 		return m_yahrzeit;
@@ -56,8 +56,8 @@ public class YahrzeitImage extends Image implements ImageAddedHandler{
 		Console.log("on image added");
 		Console.log("photos to url length in event: " + event.photos_to_url.length());
 		for (int i=0;i< event.photos_to_url.length();i++){
-			Console.log("comparing " + event.photos_to_url.get(i).getId() + " to " + m_yahrzeit.getPhoto());
-			if (event.photos_to_url.get(i).getId()==String.valueOf(m_yahrzeit.getPhoto())){
+			Console.log("comparing " + event.photos_to_url.get(i).getId() + " to " + m_yahrzeit.getPhoto().getId());
+			if (event.photos_to_url.get(i).getId()==String.valueOf(m_yahrzeit.getPhoto().getId())){
 				Console.log("setting photo to " + event.photos_to_url.get(i).getUrl());
 				setUrl(event.photos_to_url.get(i).getUrl());
 				break;

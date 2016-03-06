@@ -334,23 +334,28 @@ function generateSignature($params, $secret) {
     return md5($base_string);
   }
 
-function add_photo($id, $pid) {
-if (!isset($pid)  || !isset($id)) 
+function add_photo($id, $photo) {
+	global $arr,$fbtoken,$fb;
+	if (!isset($photo)  || !isset($id)) 
 	return (Array("method"=>"add_photo","status"=>"error"));
 try {
-	global $arr;
-	$fbtoken=$arr->authResponse->accessToken;
-	$fb=phpsdk($fbtoken);
+	if (!isset($fbtoken)){
+	   $fbtoken=$arr->authResponse->accessToken;
+	   $fb=phpsdk($fbtoken);
+	}
 	//$response=$fb->get("/".$pid->id."?fields=id,picture.type(normal)");
-	$request=$fb->request('GET', "/" . $pid->id . "?fields=id,picture.type(normal)" );
+	error_log(print_r($photo,1));
+	$apireq= "/" . $photo->id . "?fields=id,picture.type(normal)";
+	error_log("apireq: " . $apireq);
+	$request=$fb->request('GET', $apireq );
 	$response=$fb->getClient()->sendRequest($request);
 	$graphNode = $response->getGraphNode();
-	$photo=null;
-	if ($graphNode->getField("id")==$pid->id && $graphNode->getField("picture") != null ){
-		$photo=array("id"=>$pid->id,"picture"=>$graphNode->getField("picture"));
+	
+	if ($graphNode->getField("id")==$photo->id && $graphNode->getField("picture") != null ){
+		$photo->picture=$graphNode->getField("picture");
 	}
     $conn = get_db_conn();
-    $sql = "update yahrzeit set photo='$pid->id'  where id=$id";
+    $sql = "update yahrzeit set photo='$photo->id'  where id=$id";
     error_log($sql);
     $res = mysqli_query($conn,$sql);
     $sql = "select * from yahrzeit where id=$id";
@@ -443,4 +448,14 @@ function phpsdk($fbtoken){
 	]);
 	return $fb;
 }
+class Photo {
+	public $picture;
+	public $id;
+  function __construct($id,$picture=null){
+  	$this->id=$id;
+  	$this->picture=$picture;
+ }
+}
+
+
 ?>

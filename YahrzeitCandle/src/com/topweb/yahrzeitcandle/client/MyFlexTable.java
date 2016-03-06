@@ -259,19 +259,20 @@ public class MyFlexTable implements HasHandlers{
 				    	setPhotoButton.addClickHandler(new ClickHandler(){
 							@Override
 							public void onClick(ClickEvent event) {
+								final String perm="user_photos";
 								PhotoBrowser.activeYahrzeit=((YAddPhotoButton)event.getSource()).getYahrzeit();
 								Console.log("active Yahrzeit: " + PhotoBrowser.activeYahrzeit.getName());
-								  if (YahrzeitCandle.perms.get("user_photos")==null || YahrzeitCandle.perms.get("user_photos").compareTo("granted")!=0) {
+								  if (YahrzeitCandle.perms.get(perm)==null || YahrzeitCandle.perms.get(perm).compareTo("granted")!=0) {
 									  new FBLogin(){
 										@Override
 										public void apiCallback(FBAuthResponse response) {
 											 Console.logAsObject(response);
-											 if(response.getPermsGranted().contains("user_photos")){
-												YahrzeitCandle.perms.put("user_photos", "granted");
+											 if(response.getPermsGranted().contains(perm)){
+												YahrzeitCandle.perms.put(perm, "granted");
 											}
 										}
 										  
-									  }.login("user_photos");
+									  }.login(perm);
 								}else {
 									PhotoBrowser.showUploader();
 								}
@@ -479,7 +480,7 @@ public class MyFlexTable implements HasHandlers{
 						}
 						setAllMyButtonsEnabled(true);
 						YahrzeitCandle.addYahrButton.setEnabled(true);
-				 } else if (req.getMethod().equalsIgnoreCase("add_photo")){ //gets called when choosing from fbalbums
+				 } else if (req.getMethod().equalsIgnoreCase("add_photo")){ //gets called when using photo chooser
 						PhotoBrowser.d.hide();
 
 					    final AbsolutePanel placeholderImagePanel = new AbsolutePanel();
@@ -542,9 +543,10 @@ public class MyFlexTable implements HasHandlers{
 				    	setPhotoButton.addClickHandler(new ClickHandler(){
 							@Override
 							public void onClick(ClickEvent event) {
+								final String perm="user_photos";
 								PhotoBrowser.activeYahrzeit=((YAddPhotoButton)event.getSource()).getYahrzeit();
 								Console.log("active Yahrzeit: " + PhotoBrowser.activeYahrzeit.getName());
-								  if (YahrzeitCandle.perms.get("user_photos")==null || YahrzeitCandle.perms.get("user_photos").compareTo("granted")!=0) {
+								  if (YahrzeitCandle.perms.get(perm)==null || YahrzeitCandle.perms.get(perm).compareTo("granted")!=0) {
 									  new FBLogin(){
 
 										@Override
@@ -553,7 +555,7 @@ public class MyFlexTable implements HasHandlers{
 											
 										}
 										  
-									  }.login("user_photos");
+									  }.login(perm);
 								}else {
 									
 									PhotoBrowser.showUploader();
@@ -814,7 +816,7 @@ private void editRow(int dbid) {
 		if (h1==null) return;
 		SvrReq svr=(SvrReq)JavaScriptObject.createObject();
 		svr.setMethod("add_photo");
-		h1.setPhotoId(String.valueOf(fbPhoto.getId()));
+		h1.setPhoto(PhotoNative.create(fbPhoto.getId(),fbPhoto.getUrl()));
 		 Yahrzeit h[] = {h1};
 	        svr.setYahrzeits(JsArrayUtils.readOnlyJsArray(h));
 		YahrzeitCandle.yahrFlexTable.submitData(svr);
@@ -827,7 +829,7 @@ private void editRow(int dbid) {
 		svr.setYahrzeits(JsArrayUtils.readOnlyJsArray(h));
 		YahrzeitCandle.yahrFlexTable.submitData(svr);	
 	}
-	public static void addPhotoComplete(Yahrzeit yahrzeit_with_photo) { // when uploading photo, not using chooser
+	public static void addPhotoFromUpload(Yahrzeit yahrzeit_with_photo) { // when uploading photo, not using chooser
 		final AbsolutePanel placeholderImagePanel = new AbsolutePanel();
 	    FocusPanel fPanel = new FocusPanel();					
 
@@ -866,7 +868,7 @@ private void editRow(int dbid) {
 	    flexTable.setWidget(position, 3, fPanel );
 	    
 	    
-	    /*String graphquery="/me?ids=" + yahrzeit_with_photo.getPhoto() + "&fields=id,picture.type(normal)";
+	   /* String graphquery="/me?ids=" + yahrzeit_with_photo.getPhoto().getId() + "&fields=id,picture.type(normal)";
 		Console.log("graphquery: " + graphquery);
 		new FBApiGetPhotos().get(graphquery);*/
 	}

@@ -232,7 +232,8 @@ public static void showUploader(){
 			    }));
 	    h.add(gotoChooser);
 	    panel.add(h);
-	    if (YahrzeitCandle.perms.get("publish_actions")==null || YahrzeitCandle.perms.get("publish_actions").compareTo("granted")!=0){
+	    final String perm="publish_actions";
+	    if (YahrzeitCandle.perms.get(perm)==null || YahrzeitCandle.perms.get(perm).compareTo("granted")!=0){
 	    	Button b=new Button("Upload..");
 	    	b.addClickHandler(new ClickHandler(){
 				@Override
@@ -244,8 +245,11 @@ public static void showUploader(){
 							public void apiCallback(FBAuthResponse response) {
 								Console.log("in api callback");
 								 Console.log(response.getStatus());
+								 if (response.getPermsGranted().contains(perm)){
+									 YahrzeitCandle.perms.put(perm, "granted");
+								 }
 							}
-						  }.login("publish_actions");
+						  }.login(perm);
 						  
 				}
 	    	});
@@ -288,7 +292,7 @@ public static void showUploader(){
 			    	  Console.log("response: " + s.getStatus());
 			    	 if (yahrzeit_with_photo!=null && s.getStatus().compareToIgnoreCase("OK")==0) {
 			    		 d.hide();
-			    		 MyFlexTable.addPhotoComplete(yahrzeit_with_photo);
+			    		 MyFlexTable.addPhotoFromUpload(yahrzeit_with_photo);
 			    		
 			    	 } else {
 			    		 Window.alert("error uploading photo");

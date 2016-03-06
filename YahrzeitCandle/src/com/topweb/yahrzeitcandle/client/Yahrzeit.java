@@ -46,8 +46,7 @@ public final class Yahrzeit extends JavaScriptObject { //implements Comparable<H
 		}*/
 
 		public final native PhotoNative getPhoto() /*-{return this.photo;}-*/;
-			
-
+		
 		public final native void setPhoto(PhotoNative photo) /*-{
 			this.photo=photo;
 		}-*/;

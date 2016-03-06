@@ -194,7 +194,7 @@ public static Map<String,String> perms=new HashMap<String,String>();
 		for (int i=0;i<theperms.length();i++){
 			Perm p = theperms.get(i);
 			perms.put(p.getPermission(),p.getStatus());
-			
+			Console.log(p.getPermission() + " " + p.getStatus());
 		}
 		
 		newHonoree.setReadOnly(false);

@@ -18,10 +18,14 @@ if (isset($_FILES['photoUploader'])){
 		
 		$response = $fb->post('/me/photos', $data);
 		$graphNode = $response->getGraphNode();
-		$pid= $graphNode['id'];
+		$photo=null;
+		if ($graphNode->getField("id")!=null /*&& $graphNode->getField("picture") != null */){
+			$photo=new Photo($graphNode->getField("id") );
+		}
+		error_log("new photo from upload: " . print_r($photo,1));
 		$yahrzeit=json_decode(str_replace("\\","",$_REQUEST['yahrzeit']));
 		error_log("yahrzeit: ".print_r($yahrzeit,1));
-		$exit_str=add_photo($yahrzeit->{'id'},$pid);
+		$exit_str=add_photo($yahrzeit->{'id'},$photo);
 		error_log("exit str: ".json_encode($exit_str));
 		exit(json_encode($exit_str));
 		
@@ -76,7 +80,8 @@ if ($arr->{'method'}=="add") {
 	 exit($j);
 }
 else if ($arr->{'method'}=="add_photo") {
-	$json_array=add_photo($arr->{'yahrzeitlist'}[0]->{'id'},$arr->{'yahrzeitlist'}[0]->{'photo'});
+	$json_array=add_photo($arr->{'yahrzeitlist'}[0]->{'id'},
+	 $arr->{'yahrzeitlist'}[0]->{'photo'});
 	error_log(print_r(json_encode($json_array),1));
 	exit(json_encode($json_array));
 }
