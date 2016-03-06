@@ -426,7 +426,7 @@ public class MyFlexTable implements HasHandlers{
 						//Console.log(YahrzeitCandle.perms.get("email"));
 						//Console.logAsObject(req.getUserPrefs().getAllowEmail());
 						if (YahrzeitCandle.perms.get("email").compareTo("granted")==0
-							&& req.getUserPrefs().getAllowEmail()) {
+							&&  req.getUserPrefs()!=null && req.getUserPrefs().getAllowEmail()) {
 							YahrzeitCandle.canEmail(true);
 						}
 						else {

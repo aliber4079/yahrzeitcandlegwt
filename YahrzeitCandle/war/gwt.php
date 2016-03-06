@@ -91,9 +91,10 @@ else if ($arr->{'method'}=="clear_photo") {
 	exit(json_encode($json_array));
 }
 else if ($arr->{'method'}=="resync") {
-  session_start();
-  /*$_SESSION['fbtoken']= $arr->authResponse->accessToken;
+  /*session_start();
+  $_SESSION['fbtoken']= $arr->authResponse->accessToken;
   session_commit();*/
+	set_prefs(null,$user_id);
   $yahrzeits=get_yahrzeits($user_id);
   
   error_log("got yahrzeits");
@@ -129,16 +130,21 @@ else if ($arr->{'method'}=="delete") {
 }
 } else if($arr->{'method'}=="allow_email") {
 if (!isset($arr->{'authResponse'})) {
-error_log("in allow_email: no authResponse");
-$j=json_encode(Array("status"=>"OK",'method'=>"allow_email", "allow_email"=>FALSE));
-print ($j);
-return null;
-}
-$allow_email=$arr->{'allow_email'} && TRUE;
-$prefs=array("allow_email"=>$allow_email && TRUE);
-   set_prefs($prefs,$user_id);
-   $j=json_encode(array("status"=>"OK",'method'=>"allow_email", "allow_email"=>$allow_email));
+	error_log("in allow_email: no authResponse");
+	$j=json_encode(Array("status"=>"OK",'method'=>"allow_email", "allow_email"=>FALSE));
 	print ($j);
+	return null;
+ }
+$prefs=null;
+if (isset($arr->{'allow_email'})&& $arr->{'allow_email'}=="1"){
+	$prefs=array("allow_email"=>TRUE);
+} else {
+	$prefs=array("allow_email"=>FALSE);
+}
+set_prefs($prefs,$user_id);
+$j=json_encode(array("status"=>"OK",'method'=>"allow_email", "allow_email"=>$allow_email));
+print ($j);
+
 }
 
 function reauth($e){

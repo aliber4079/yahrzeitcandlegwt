@@ -222,9 +222,14 @@ function set_prefs($prefs,$uid) {
 global $facebook;
 if (!isset($uid)) return NULL;
 $conn = get_db_conn();
-$sql="replace into users values ($uid,".
+$sql=null;
+if ($prefs==null){
+	$sql="replace into users (uid, last_visit) values ($uid,unix_timestamp())";
+} else {
+	$sql="replace into users values ($uid,".
 		intval($prefs['allow_email']).
 	",0,unix_timestamp(),NULL)";
+}
     error_log("sql: $sql");
     $conn = get_db_conn();
     $res = mysqli_query($conn,$sql);
