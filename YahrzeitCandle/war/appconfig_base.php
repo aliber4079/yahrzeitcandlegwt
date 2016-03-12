@@ -237,13 +237,16 @@ if ($prefs==null){
 }
 function get_userprefs($user_id) {
     $conn = get_db_conn();
-$sql="select * from users where uid=$user_id";
+	$sql="select * from users where uid=$user_id";
     $res = mysqli_query($conn,$sql);
-if (!$res) {
-	error_log($conn->error);
-	return 0;
-}
-    return mysqli_fetch_assoc($res);
+	if (!$res) {
+		error_log($conn->error);
+		return 0;
+	}
+	$res=mysqli_fetch_assoc($res);
+	$res["allow_email"]=intval($res["allow_email"]);
+	
+	return $res;
 	 
 }
 

@@ -424,13 +424,15 @@ public static Map<String,String> perms=new HashMap<String,String>();
 				@Override
 				public void apiCallback(FBAuthResponse response) {
 				 Console.logAsObject(response);
-				 if(response.getPermsGranted().contains(perm)){
+				 if(response.getPermsGranted().contains(perm)){ //finish up by posting allowed to db
 					YahrzeitCandle.perms.put(perm, "granted");
 					SvrReq svr=(SvrReq)JavaScriptObject.createObject();
 			        svr.setMethod("allow_email");
 					svr.setFbAuthResponse(YahrzeitCandle.fbAuthResponse);
 					svr.setAllowEmail(true);
 			        YahrzeitCandle.yahrFlexTable.submitData(svr);
+				 } else {
+					emailNotif.setValue(false);
 				 }
 				}
 			  }.login(perm);

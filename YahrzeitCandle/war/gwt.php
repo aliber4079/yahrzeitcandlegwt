@@ -91,10 +91,7 @@ else if ($arr->{'method'}=="clear_photo") {
 	exit(json_encode($json_array));
 }
 else if ($arr->{'method'}=="resync") {
-  /*session_start();
-  $_SESSION['fbtoken']= $arr->authResponse->accessToken;
-  session_commit();*/
-	set_prefs(null,$user_id);
+  set_prefs(null,$user_id);
   $yahrzeits=get_yahrzeits($user_id);
   
   error_log("got yahrzeits");
